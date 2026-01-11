@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YemVideo - The best of YouTube and TikTok</title>
+    <style>
+        :root {
+            --primary-color: #FF0000;
+            --secondary-color: #000000;
+            --text-color: #030303;
+            --light-gray: #f9f9f9;
+            --dark-gray: #606060;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            color: var(--text-color);
+        }
+
+        /* Splash Screen Animation */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeOut 1.5s ease-in-out 2s forwards;
+        }
+
+        .logo-animation {
+            animation: bounce 1s ease-in-out;
+        }
+
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-shape {
+            width: 120px;
+            height: 80px;
+            background-color: var(--primary-color);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        .pause-button {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pause-bar {
+            width: 12px;
+            height: 40px;
+            background-color: white;
+        }
+
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+            letter-spacing: -1px;
+        }
+
+        /* Main Header */
+        .main-header {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo-small {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.5rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .logo-shape-small {
+            width: 30px;
+            height: 20px;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pause-button-small {
+            display: flex;
+            gap: 2px;
+        }
+
+        .pause-bar-small {
+            width: 3px;
+            height: 10px;
+            background-color: white;
+        }
+
+        .search-bar {
+            display: flex;
+            width: 40%;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border: 1px solid #ccc;
+            border-radius: 20px 0 0 20px;
+            font-size: 1rem;
+        }
+
+        .search-button {
+            background-color: var(--light-gray);
+            border: 1px solid #ccc;
+            border-left: none;
+            border-radius: 0 20px 20px 0;
+            padding: 0 1rem;
+            cursor: pointer;
+        }
+
+        .user-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .upload-btn {
+            background-color: transparent;
+            border: 1px solid #ccc;
+            color: var(--text-color);
+        }
+
+        .upload-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .sign-in-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .sign-in-btn:hover {
+            background-color: #e60000;
+        }
+
+        .user-profile {
+            background-color: #f0f0f0;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .my-channel-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            display: none;
+        }
+
+        .my-channel-btn:hover {
+            background-color: #e60000;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 10px;
+            padding: 8px 0;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-icon {
+            font-size: 22px;
+            margin-bottom: 3px;
+        }
+
+        /* Categories */
+        .categories {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 12px;
+            background-color: white;
+            position: sticky;
+            top: 60px; /* Below the header */
+            z-index: 90;
+            scrollbar-width: none; /* Firefox */
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .categories::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .category {
+            padding: 6px 12px;
+            margin-right: 8px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .category:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .category.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            display: none;
+        }
+
+        .modal {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark-gray);
+        }
+
+        .close-modal:hover {
+            color: var(--text-color);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        .form-btn:hover {
+            background-color: #e60000;
+        }
+
+        .form-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .form-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .form-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Upload Modal */
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(255, 0, 0, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .upload-preview {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .upload-preview video {
+            max-width: 100%;
+            max-height: 200px;
+            display: block;
+            margin: 0 auto;
+            border-radius: 4px;
+        }
+
+        /* Channel Page */
+        .channel-header {
+            background-color: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .channel-avatar {
+            width: 100px;
+            height: 100px;
+            background-color: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+
+        .channel-info {
+            flex-grow: 1;
+        }
+
+        .channel-info h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .channel-description {
+            color: var(--dark-gray);
+            margin-bottom: 1rem;
+        }
+
+        .channel-stats {
+            display: flex;
+            gap: 1.5rem;
+            color: var(--dark-gray);
+        }
+
+        .channel-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Main Content */
+        .content {
+            display: flex;
+            max-width: 1400px;
+            margin: 2rem auto;
+            gap: 2rem;
+            display: none;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+
+        .video-feed {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .video-container {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .video-container:hover {
+            transform: translateY(-5px);
+        }
+
+        .video-container video {
+            width: 100%;
+            display: block;
+            cursor: pointer;
+            aspect-ratio: 16/9;
+            background-color: #000;
+        }
+
+        .video-info {
+            padding: 1rem;
+        }
+
+        .video-info h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .video-stats {
+            color: var(--dark-gray);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .video-author {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            color: var(--dark-gray);
+            font-size: 0.9rem;
+        }
+
+        .author-avatar {
+            width: 24px;
+            height: 24px;
+            background-color: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* Video Actions */
+        .video-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--dark-gray);
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .action-btn.liked {
+            color: var(--primary-color);
+        }
+
+        .action-btn.disliked {
+            color: #065fd4;
+        }
+
+        .action-btn.subscribed {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* Video Player Styles */
+        .video-player {
+            width: 100%;
+            max-width: 100%;
+            background-color: #000;
+            position: relative;
+        }
+
+        .video-player video {
+            width: 100%;
+            display: block;
+        }
+
+        /* Fullscreen styles */
+        .video-player:-webkit-full-screen {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        .video-player:-moz-full-screen {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        .video-player:-ms-fullscreen {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        .video-player:fullscreen {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        /* Subscribe Animation */
+        @keyframes subscribePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .subscribe-animation {
+            animation: subscribePulse 0.5s ease;
+        }
+
+        /* Comments Section */
+        .comments-section {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .comments-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .comment-submit {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 0 1rem;
+            cursor: pointer;
+        }
+
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .comment {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+
+        .comment-content {
+            flex: 1;
+        }
+
+        .comment-author {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .comment-text {
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--dark-gray);
+        }
+
+        .comment-action {
+            cursor: pointer;
+        }
+
+        .comment-action:hover {
+            color: var(--primary-color);
+        }
+
+        /* Video Detail Page */
+        .video-player-container {
+            width: 100%;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .video-player-container video {
+            width: 100%;
+            display: block;
+        }
+
+        /* Animations */
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.1);
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .search-bar {
+                display: none;
+            }
+            
+            .channel-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .channel-avatar {
+                margin: 0 auto;
+            }
+            
+            .channel-stats {
+                justify-content: center;
+            }
+            
+            .main-header {
+                padding: 0.5rem 1rem;
+            }
+            
+            .bottom-nav {
+                display: flex;
+            }
+            
+            .user-nav {
+                display: none;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="splash-screen">
+        <div class="logo-animation">
+            <div class="logo-container">
+                <div class="logo-shape">
+                    <div class="pause-button">
+                        <div class="pause-bar"></div>
+                        <div class="pause-bar"></div>
+                    </div>
+                </div>
+                <h1 class="logo-text">YemVideo</h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Sign in</h2>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="form-btn">Sign in</button>
+            </form>
+            <div class="form-link">
+                <p>Don't have an account? <a href="#" id="showSignup">Sign up</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal-overlay" id="signupModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Create account</h2>
+                <button class="close-modal" id="closeSignupModal">&times;</button>
+            </div>
+            <form id="signupForm">
+                <div class="form-group">
+                    <label for="signupName">Name</label>
+                    <input type="text" id="signupName" required placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" required placeholder="Create a password">
+                </div>
+                <button type="submit" class="form-btn">Create account</button>
+            </form>
+            <div class="form-link">
+                <p>Already have an account? <a href="#" id="showLogin">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Upload Video</h2>
+                <button class="close-modal" id="closeUploadModal">&times;</button>
+            </div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">↑</div>
+                <h3>Drag and drop video files here</h3>
+                <p>or click to browse files</p>
+                <input type="file" id="videoInput" accept="video/*" style="display: none;">
+                <div class="upload-preview" id="uploadPreview">
+                    <video id="videoPreview" controls></video>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="text" id="videoTitle" placeholder="Enter video title..." required>
+            </div>
+            <div class="form-group">
+                <select id="videoCategory" style="width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="all">All</option>
+                    <option value="trending">Trending</option>
+                    <option value="music">Music</option>
+                    <option value="gaming">Gaming</option>
+                    <option value="news">News</option>
+                    <option value="sports">Sports</option>
+                    <option value="comedy">Comedy</option>
+                </select>
+            </div>
+            <button class="form-btn" id="uploadSubmitBtn">Upload Video</button>
+        </div>
+    </div>
+
+    <!-- Create Channel Modal -->
+    <div class="modal-overlay" id="channelModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Create Your Channel</h2>
+                <button class="close-modal" id="closeChannelModal">&times;</button>
+            </div>
+            <form id="channelForm">
+                <div class="form-group">
+                    <label for="channelName">Channel Name</label>
+                    <input type="text" id="channelName" required placeholder="Enter your channel name">
+                </div>
+                <div class="form-group">
+                    <label for="channelDescription">Description (optional)</label>
+                    <input type="text" id="channelDescription" placeholder="Tell viewers about your channel">
+                </div>
+                <button type="submit" class="form-btn">Create Channel</button>
+            </form>
+        </div>
+    </div>
+
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-small" id="homeLink">
+                <div class="logo-shape-small">
+                    <div class="pause-button-small">
+                        <div class="pause-bar-small"></div>
+                        <div class="pause-bar-small"></div>
+                    </div>
+                </div>
+                <span>YemVideo</span>
+            </div>
+            <div class="search-bar">
+                <input type="text" placeholder="Search videos...">
+                <button class="search-button">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                </button>
+            </div>
+            <nav class="user-nav">
+                <a href="#" class="nav-btn upload-btn" id="uploadBtn">Upload</a>
+                <a href="#" class="nav-btn my-channel-btn" id="myChannelBtn">My Channel</a>
+                <a href="#" class="nav-btn sign-in-btn" id="signInBtn">Sign In</a>
+                <div class="user-profile" id="userProfile"></div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Categories -->
+    <div class="categories" id="categories">
+        <div class="category active" data-category="all">For You</div>
+        <div class="category" data-category="following">Following</div>
+        <div class="category" data-category="trending">Trending</div>
+        <div class="category" data-category="music">Music</div>
+        <div class="category" data-category="gaming">Gaming</div>
+        <div class="category" data-category="news">News</div>
+        <div class="category" data-category="sports">Sports</div>
+        <div class="category" data-category="comedy">Comedy</div>
+    </div>
+
+    <main class="content">
+        <!-- Home Page Content -->
+        <section class="video-feed" id="homePage">
+            <!-- Videos will be loaded here -->
+        </section>
+
+        <!-- Channel Page Content (hidden by default) -->
+        <div id="channelPage" style="display: none; width: 100%;">
+            <div class="channel-header" id="channelHeader">
+                <div class="channel-avatar" id="channelAvatar">Y</div>
+                <div class="channel-info">
+                    <h1 id="channelTitle">Channel Name</h1>
+                    <p class="channel-description" id="channelDescription">Channel description goes here</p>
+                    <div class="channel-stats">
+                        <div class="channel-stat">
+                            <span id="subscriberCount">0</span>
+                            <span>subscribers</span>
+                        </div>
+                        <div class="channel-stat">
+                            <span id="videoCount">0</span>
+                            <span>videos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <section class="video-feed" id="channelVideos">
+                <!-- Channel videos will be loaded here -->
+            </section>
+        </div>
+
+        <!-- Video Detail Page (hidden by default) -->
+        <div id="videoPage" style="display: none; width: 100%;">
+            <div class="video-player-container" id="videoPlayerContainer">
+                <!-- Video player will be loaded here -->
+            </div>
+            <div class="video-info" id="videoInfo">
+                <!-- Video info will be loaded here -->
+            </div>
+            <div class="comments-section" id="commentsSection">
+                <!-- Comments will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="#" class="nav-item active" id="bottomHome">
+            <i class="material-icons nav-icon">home</i>
+            <span>Home</span>
+        </a>
+        <a href="#" class="nav-item" id="bottomDiscover">
+            <i class="material-icons nav-icon">explore</i>
+            <span>Discover</span>
+        </a>
+        <a href="#" class="nav-item" id="bottomCreate">
+            <div class="logo-shape-small" style="margin-bottom: 3px;">
+                <div class="pause-button-small">
+                    <div class="pause-bar-small"></div>
+                    <div class="pause-bar-small"></div>
+                </div>
+            </div>
+            <span>Create</span>
+        </a>
+        <a href="#" class="nav-item" id="bottomInbox">
+            <i class="material-icons nav-icon">notifications</i>
+            <span>Inbox</span>
+        </a>
+        <a href="#" class="nav-item" id="bottomMe">
+            <i class="material-icons nav-icon">account_circle</i>
+            <span>Me</span>
+        </a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // App State
+            let currentUser = null;
+            let currentChannel = null;
+            let videos = [];
+            let channels = [];
+            let currentCategory = 'all';
+            let subscriptions = [];
+            let likedVideos = [];
+            let dislikedVideos = [];
+            let comments = [];
+            let currentVideoId = null;
+            
+            // DOM Elements
+            const splashScreen = document.querySelector('.splash-screen');
+            const mainHeader = document.querySelector('.main-header');
+            const content = document.querySelector('.content');
+            const homePage = document.getElementById('homePage');
+            const channelPage = document.getElementById('channelPage');
+            const videoPage = document.getElementById('videoPage');
+            const homeLink = document.getElementById('homeLink');
+            const categories = document.getElementById('categories');
+            const categoryItems = document.querySelectorAll('.categories .category');
+            
+            // User elements
+            const signInBtn = document.getElementById('signInBtn');
+            const userProfile = document.getElementById('userProfile');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const myChannelBtn = document.getElementById('myChannelBtn');
+            
+            // Modal elements
+            const loginModal = document.getElementById('loginModal');
+            const closeModal = document.getElementById('closeModal');
+            const loginForm = document.getElementById('loginForm');
+            const showSignup = document.getElementById('showSignup');
+            const signupModal = document.getElementById('signupModal');
+            const closeSignupModal = document.getElementById('closeSignupModal');
+            const signupForm = document.getElementById('signupForm');
+            const showLogin = document.getElementById('showLogin');
+            
+            // Upload elements
+            const uploadModal = document.getElementById('uploadModal');
+            const closeUploadModal = document.getElementById('closeUploadModal');
+            const uploadArea = document.getElementById('uploadArea');
+            const videoInput = document.getElementById('videoInput');
+            const uploadPreview = document.getElementById('uploadPreview');
+            const videoPreview = document.getElementById('videoPreview');
+            const videoTitle = document.getElementById('videoTitle');
+            const videoCategory = document.getElementById('videoCategory');
+            const uploadSubmitBtn = document.getElementById('uploadSubmitBtn');
+            
+            // Channel elements
+            const channelModal = document.getElementById('channelModal');
+            const closeChannelModal = document.getElementById('closeChannelModal');
+            const channelForm = document.getElementById('channelForm');
+            const channelTitle = document.getElementById('channelTitle');
+            const channelDesc = document.getElementById('channelDescription');
+            const channelAvatar = document.getElementById('channelAvatar');
+            const channelVideos = document.getElementById('channelVideos');
+            
+            // Video player elements
+            const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+            const videoInfo = document.getElementById('videoInfo');
+            const commentsSection = document.getElementById('commentsSection');
+            
+            // Bottom nav elements
+            const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
+            const bottomHome = document.getElementById('bottomHome');
+            const bottomDiscover = document.getElementById('bottomDiscover');
+            const bottomCreate = document.getElementById('bottomCreate');
+            const bottomInbox = document.getElementById('bottomInbox');
+            const bottomMe = document.getElementById('bottomMe');
+            
+            // Sample data
+            const sampleVideos = [
+                {
+                    id: 1,
+                    title: "Trending Video #1",
+                    views: 1200000,
+                    likes: 45000,
+                    dislikes: 1200,
+                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                    author: "YemVideo Team",
+                    authorInitial: "Y",
+                    channelId: "channel1",
+                    category: "trending",
+                    uploadDate: "2023-05-15",
+                    description: "This is a sample trending video with amazing content!"
+                },
+                {
+                    id: 2,
+                    title: "Amazing Trick Shots",
+                    views: 850000,
+                    likes: 32000,
+                    dislikes: 800,
+                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+                    author: "Sports Fan",
+                    authorInitial: "S",
+                    channelId: "channel2",
+                    category: "sports",
+                    uploadDate: "2023-05-10",
+                    description: "Watch these incredible trick shots that will blow your mind!"
+                },
+                {
+                    id: 3,
+                    title: "Chill Music Mix",
+                    views: 2500000,
+                    likes: 98000,
+                    dislikes: 1500,
+                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                    author: "Music Lover",
+                    authorInitial: "M",
+                    channelId: "channel3",
+                    category: "music",
+                    uploadDate: "2023-04-28",
+                    description: "Relaxing music mix to help you focus and unwind"
+                }
+            ];
+            
+            const sampleChannels = [
+                {
+                    id: "channel1",
+                    name: "YemVideo Team",
+                    description: "Official YemVideo channel",
+                    owner: "admin@yemvideo.com",
+                    subscribers: 10000,
+                    created: "2023-01-01"
+                },
+                {
+                    id: "channel2",
+                    name: "Sports Fan",
+                    description: "All about sports!",
+                    owner: "sports@example.com",
+                    subscribers: 5000,
+                    created: "2023-02-15"
+                },
+                {
+                    id: "channel3",
+                    name: "Music Lover",
+                    description: "The best music mixes",
+                    owner: "music@example.com",
+                    subscribers: 15000,
+                    created: "2023-03-10"
+                }
+            ];
+
+            const sampleComments = [
+                {
+                    id: 1,
+                    videoId: 1,
+                    author: "User1",
+                    authorInitial: "U",
+                    text: "This video is amazing!",
+                    date: "2023-05-16T10:30:00Z",
+                    likes: 24
+                },
+                {
+                    id: 2,
+                    videoId: 1,
+                    author: "User2",
+                    authorInitial: "U",
+                    text: "I've watched this 10 times already!",
+                    date: "2023-05-16T11:45:00Z",
+                    likes: 12
+                },
+                {
+                    id: 3,
+                    videoId: 2,
+                    author: "User3",
+                    authorInitial: "U",
+                    text: "Those trick shots are unbelievable!",
+                    date: "2023-05-11T09:15:00Z",
+                    likes: 8
+                }
+            ];
+            
+            // Initialize the app
+            function initApp() {
+                // Load sample videos
+                videos = [...sampleVideos];
+                
+                // Load sample channels
+                channels = [...sampleChannels];
+
+                // Load sample comments
+                comments = [...sampleComments];
+                
+                // Load user data if exists
+                const savedUser = localStorage.getItem('yemvideoUser');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    
+                    // Load user channel if exists
+                    const savedChannels = JSON.parse(localStorage.getItem('yemvideoChannels')) || [];
+                    const userChannel = savedChannels.find(c => c.owner === currentUser.email);
+                    if (userChannel) {
+                        currentChannel = userChannel;
+                    }
+                    
+                    // Load user subscriptions
+                    const savedSubscriptions = localStorage.getItem('yemvideoSubscriptions');
+                    if (savedSubscriptions) {
+                        subscriptions = JSON.parse(savedSubscriptions);
+                    }
+
+                    // Load liked/disliked videos
+                    const savedLikes = localStorage.getItem('yemvideoLikes');
+                    if (savedLikes) {
+                        likedVideos = JSON.parse(savedLikes);
+                    }
+
+                    const savedDislikes = localStorage.getItem('yemvideoDislikes');
+                    if (savedDislikes) {
+                        dislikedVideos = JSON.parse(savedDislikes);
+                    }
+                    
+                    updateUserUI();
+                }
+                
+                // Load any user-uploaded videos
+                const savedVideos = localStorage.getItem('yemvideoVideos');
+                if (savedVideos) {
+                    const userVideos = JSON.parse(savedVideos);
+                    videos.unshift(...userVideos);
+                }
+                
+                // Load any user-created channels
+                const savedChannels = localStorage.getItem('yemvideoChannels');
+                if (savedChannels) {
+                    const userChannels = JSON.parse(savedChannels);
+                    channels.push(...userChannels);
+                }
+
+                // Load any user comments
+                const savedComments = localStorage.getItem('yemvideoComments');
+                if (savedComments) {
+                    const userComments = JSON.parse(savedComments);
+                    comments.push(...userComments);
+                }
+                
+                renderHomeVideos();
+            }
+            
+            // Format large numbers
+            function formatNumber(num) {
+                if (num >= 1000000) {
+                    return (num / 1000000).toFixed(1) + 'M';
+                }
+                if (num >= 1000) {
+                    return (num / 1000).toFixed(1) + 'K';
+                }
+                return num.toString();
+            }
+            
+            // Format date
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 0) return 'Today';
+                if (diffDays === 1) return 'Yesterday';
+                if (diffDays < 7) return `${diffDays} days ago`;
+                if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+                if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+                return `${Math.floor(diffDays / 365)} years ago`;
+            }
+            
+            // Render videos to home page
+            function renderHomeVideos(category = 'all') {
+                homePage.innerHTML = '';
+                currentCategory = category;
+                
+                const filteredVideos = category === 'all' 
+                    ? videos 
+                    : videos.filter(v => v.category === category);
+                
+                if (filteredVideos.length === 0) {
+                    homePage.innerHTML = '<p>No videos found in this category.</p>';
+                    return;
+                }
+                
+                filteredVideos.forEach(video => {
+                    const videoElement = createVideoElement(video);
+                    homePage.appendChild(videoElement);
+                });
+            }
+            
+            // Render channel videos
+            function renderChannelVideos(channelId) {
+                channelVideos.innerHTML = '';
+                
+                const channelVideosList = videos.filter(v => v.channelId === channelId);
+                
+                if (channelVideosList.length === 0) {
+                    channelVideos.innerHTML = '<p>No videos uploaded yet.</p>';
+                    return;
+                }
+                
+                channelVideosList.forEach(video => {
+                    const videoElement = createVideoElement(video);
+                    channelVideos.appendChild(videoElement);
+                });
+            }
+            
+            // Create video element
+            function createVideoElement(video) {
+                const videoElement = document.createElement('div');
+                videoElement.className = 'video-container';
+                videoElement.innerHTML = `
+                    <video controls>
+                        <source src="${video.url}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="video-info">
+                        <h3>${video.title}</h3>
+                        <div class="video-stats">
+                            <span>${formatNumber(video.views)} views</span>
+                            <span>•</span>
+                            <span>${formatDate(video.uploadDate)}</span>
+                        </div>
+                        <div class="video-author">
+                            <div class="author-avatar">${video.authorInitial}</div>
+                            <span>${video.author}</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click event to play video
+                videoElement.addEventListener('click', function(e) {
+                    // Only navigate to video page if not clicking on video controls
+                    if (e.target.tagName !== 'VIDEO' && !e.target.closest('video')) {
+                        showVideoPage(video.id);
+                    }
+                });
+                
+                return videoElement;
+            }
+            
+            // Show video page
+            function showVideoPage(videoId) {
+                homePage.style.display = 'none';
+                channelPage.style.display = 'none';
+                videoPage.style.display = 'block';
+                
+                currentVideoId = videoId;
+                const video = videos.find(v => v.id === videoId);
+                if (!video) return;
+                
+                // Increment view count
+                video.views++;
+                localStorage.setItem('yemvideoVideos', JSON.stringify(videos.filter(v => v.owner === currentUser?.email)));
+                
+                // Render video player
+                videoPlayerContainer.innerHTML = `
+                    <div class="video-player">
+                        <video controls autoplay>
+                            <source src="${video.url}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                `;
+                
+                // Get the video element and enable fullscreen
+                const videoElement = videoPlayerContainer.querySelector('video');
+                videoElement.addEventListener('click', function() {
+                    if (videoElement.paused) {
+                        videoElement.play();
+                    } else {
+                        videoElement.pause();
+                    }
+                });
+                
+                // Add fullscreen button
+                const fullscreenButton = document.createElement('button');
+                fullscreenButton.innerHTML = '<i class="material-icons">fullscreen</i>';
+                fullscreenButton.style.position = 'absolute';
+                fullscreenButton.style.bottom = '10px';
+                fullscreenButton.style.right = '10px';
+                fullscreenButton.style.background = 'rgba(0,0,0,0.5)';
+                fullscreenButton.style.border = 'none';
+                fullscreenButton.style.color = 'white';
+                fullscreenButton.style.borderRadius = '4px';
+                fullscreenButton.style.padding = '5px';
+                fullscreenButton.style.cursor = 'pointer';
+                fullscreenButton.style.zIndex = '10';
+                
+                fullscreenButton.addEventListener('click', function() {
+                    if (videoElement.requestFullscreen) {
+                        videoElement.requestFullscreen();
+                    } else if (videoElement.webkitRequestFullscreen) {
+                        videoElement.webkitRequestFullscreen();
+                    } else if (videoElement.msRequestFullscreen) {
+                        videoElement.msRequestFullscreen();
+                    }
+                });
+                
+                videoPlayerContainer.querySelector('.video-player').appendChild(fullscreenButton);
+                
+                // Render video info
+                const channel = channels.find(c => c.id === video.channelId);
+                const isSubscribed = currentUser && subscriptions.includes(channel.id);
+                const isLiked = currentUser && likedVideos.includes(video.id);
+                const isDisliked = currentUser && dislikedVideos.includes(video.id);
+                
+                videoInfo.innerHTML = `
+                    <h3>${video.title}</h3>
+                    <div class="video-stats">
+                        <span>${formatNumber(video.views)} views</span>
+                        <span>•</span>
+                        <span>${formatDate(video.uploadDate)}</span>
+                    </div>
+                    <div class="video-actions">
+                        <button class="action-btn ${isLiked ? 'liked' : ''}" id="likeBtn">
+                            <i class="material-icons">thumb_up</i>
+                            <span>${formatNumber(video.likes)}</span>
+                        </button>
+                        <button class="action-btn ${isDisliked ? 'disliked' : ''}" id="dislikeBtn">
+                            <i class="material-icons">thumb_down</i>
+                            <span>${formatNumber(video.dislikes)}</span>
+                        </button>
+                        <button class="action-btn ${isSubscribed ? 'subscribed' : ''}" id="subscribeBtn">
+                            <i class="material-icons">notifications</i>
+                            <span>${isSubscribed ? 'Subscribed' : 'Subscribe'}</span>
+                        </button>
+                    </div>
+                    <div class="video-author">
+                        <div class="author-avatar">${video.authorInitial}</div>
+                        <div>
+                            <div>${video.author}</div>
+                            <div class="video-stats">${formatNumber(channel?.subscribers || 0)} subscribers</div>
+                        </div>
+                    </div>
+                    <div class="video-description" style="margin-top: 1rem; padding: 1rem; background-color: #f9f9f9; border-radius: 8px;">
+                        ${video.description}
+                    </div>
+                `;
+                
+                // Add event listeners for actions
+                if (currentUser) {
+                    document.getElementById('likeBtn').addEventListener('click', () => toggleLike(video.id));
+                    document.getElementById('dislikeBtn').addEventListener('click', () => toggleDislike(video.id));
+                    document.getElementById('subscribeBtn').addEventListener('click', () => toggleSubscribe(channel.id));
+                } else {
+                    document.getElementById('likeBtn').addEventListener('click', () => loginModal.style.display = 'flex');
+                    document.getElementById('dislikeBtn').addEventListener('click', () => loginModal.style.display = 'flex');
+                    document.getElementById('subscribeBtn').addEventListener('click', () => loginModal.style.display = 'flex');
+                }
+                
+                // Render comments
+                renderComments(video.id);
+            }
+            
+            // Toggle like on video
+            function toggleLike(videoId) {
+                const video = videos.find(v => v.id === videoId);
+                if (!video || !currentUser) return;
+                
+                const index = likedVideos.indexOf(videoId);
+                if (index === -1) {
+                    // Like the video
+                    likedVideos.push(videoId);
+                    video.likes++;
+                    
+                    // Remove dislike if exists
+                    const dislikeIndex = dislikedVideos.indexOf(videoId);
+                    if (dislikeIndex !== -1) {
+                        dislikedVideos.splice(dislikeIndex, 1);
+                        video.dislikes--;
+                    }
+                } else {
+                    // Unlike the video
+                    likedVideos.splice(index, 1);
+                    video.likes--;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('yemvideoLikes', JSON.stringify(likedVideos));
+                localStorage.setItem('yemvideoDislikes', JSON.stringify(dislikedVideos));
+                localStorage.setItem('yemvideoVideos', JSON.stringify(videos.filter(v => v.owner === currentUser?.email)));
+                
+                // Update UI
+                showVideoPage(videoId);
+            }
+            
+            // Toggle dislike on video
+            function toggleDislike(videoId) {
+                const video = videos.find(v => v.id === videoId);
+                if (!video || !currentUser) return;
+                
+                const index = dislikedVideos.indexOf(videoId);
+                if (index === -1) {
+                    // Dislike the video
+                    dislikedVideos.push(videoId);
+                    video.dislikes++;
+                    
+                    // Remove like if exists
+                    const likeIndex = likedVideos.indexOf(videoId);
+                    if (likeIndex !== -1) {
+                        likedVideos.splice(likeIndex, 1);
+                        video.likes--;
+                    }
+                } else {
+                    // Remove dislike
+                    dislikedVideos.splice(index, 1);
+                    video.dislikes--;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('yemvideoDislikes', JSON.stringify(dislikedVideos));
+                localStorage.setItem('yemvideoLikes', JSON.stringify(likedVideos));
+                localStorage.setItem('yemvideoVideos', JSON.stringify(videos.filter(v => v.owner === currentUser?.email)));
+                
+                // Update UI
+                showVideoPage(videoId);
+            }
+            
+            // Toggle subscription to channel with animation
+            function toggleSubscribe(channelId) {
+                if (!currentUser) return;
+                
+                const channel = channels.find(c => c.id === channelId);
+                if (!channel) return;
+                
+                const subscribeBtn = document.getElementById('subscribeBtn');
+                subscribeBtn.classList.add('subscribe-animation');
+                
+                // Remove animation class after it completes
+                setTimeout(() => {
+                    subscribeBtn.classList.remove('subscribe-animation');
+                }, 500);
+                
+                const index = subscriptions.indexOf(channelId);
+                if (index === -1) {
+                    // Subscribe
+                    subscriptions.push(channelId);
+                    channel.subscribers++;
+                } else {
+                    // Unsubscribe
+                    subscriptions.splice(index, 1);
+                    channel.subscribers--;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('yemvideoSubscriptions', JSON.stringify(subscriptions));
+                localStorage.setItem('yemvideoChannels', JSON.stringify(channels.filter(c => c.owner === currentUser?.email)));
+                
+                // Update UI
+                setTimeout(() => {
+                    showVideoPage(currentVideoId);
+                }, 300);
+            }
+            
+            // Render comments for a video
+            function renderComments(videoId) {
+                const videoComments = comments.filter(c => c.videoId === videoId);
+                
+                commentsSection.innerHTML = `
+                    <div class="comments-title">Comments (${videoComments.length})</div>
+                    ${currentUser ? `
+                        <div class="comment-form">
+                            <input type="text" class="comment-input" placeholder="Add a comment...">
+                            <button class="comment-submit">Post</button>
+                        </div>
+                    ` : ''}
+                    <div class="comment-list" id="commentList"></div>
+                `;
+                
+                const commentList = document.getElementById('commentList');
+                videoComments.forEach(comment => {
+                    const commentElement = document.createElement('div');
+                    commentElement.className = 'comment';
+                    commentElement.innerHTML = `
+                        <div class="comment-avatar">${comment.authorInitial}</div>
+                        <div class="comment-content">
+                            <div class="comment-author">${comment.author}</div>
+                            <div class="comment-text">${comment.text}</div>
+                            <div class="comment-actions">
+                                <span class="comment-action">${formatDate(comment.date)}</span>
+                                <span class="comment-action">Reply</span>
+                                <span class="comment-action">
+                                    <i class="material-icons" style="font-size: 16px;">thumb_up</i> ${comment.likes}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    commentList.appendChild(commentElement);
+                });
+                
+                // Add comment submission handler
+                if (currentUser) {
+                    document.querySelector('.comment-submit').addEventListener('click', function() {
+                        const commentInput = document.querySelector('.comment-input');
+                        const commentText = commentInput.value.trim();
+                        
+                        if (commentText) {
+                            const newComment = {
+                                id: Date.now(),
+                                videoId: videoId,
+                                author: currentUser.name,
+                                authorInitial: currentUser.initial,
+                                text: commentText,
+                                date: new Date().toISOString(),
+                                likes: 0
+                            };
+                            
+                            comments.unshift(newComment);
+                            localStorage.setItem('yemvideoComments', JSON.stringify(comments.filter(c => c.author === currentUser?.name)));
+                            
+                            // Clear input and refresh comments
+                            commentInput.value = '';
+                            renderComments(videoId);
+                        }
+                    });
+                }
+            }
+            
+            // Show channel page
+            function showChannel(channelId) {
+                homePage.style.display = 'none';
+                channelPage.style.display = 'block';
+                videoPage.style.display = 'none';
+                
+                const channel = channels.find(c => c.id === channelId);
+                if (!channel) return;
+                
+                channelTitle.textContent = channel.name;
+                channelDesc.textContent = channel.description || 'No description provided';
+                channelAvatar.textContent = channel.name.charAt(0).toUpperCase();
+                
+                // Update stats
+                const videoCount = videos.filter(v => v.channelId === channelId).length;
+                document.getElementById('videoCount').textContent = formatNumber(videoCount);
+                document.getElementById('subscriberCount').textContent = formatNumber(channel.subscribers);
+                
+                renderChannelVideos(channelId);
+            }
+            
+            // Show home page
+            function showHomePage() {
+                homePage.style.display = 'block';
+                channelPage.style.display = 'none';
+                videoPage.style.display = 'none';
+                renderHomeVideos(currentCategory);
+            }
+            
+            // Update UI based on user state
+            function updateUserUI() {
+                if (currentUser) {
+                    signInBtn.style.display = 'none';
+                    userProfile.style.display = 'flex';
+                    userProfile.textContent = currentUser.initial;
+                    uploadBtn.style.display = 'block';
+                    
+                    if (currentChannel) {
+                        myChannelBtn.style.display = 'block';
+                    } else {
+                        myChannelBtn.style.display = 'none';
+                    }
+                } else {
+                    signInBtn.style.display = 'block';
+                    userProfile.style.display = 'none';
+                    uploadBtn.style.display = 'none';
+                    myChannelBtn.style.display = 'none';
+                }
+            }
+            
+            // Show main content after splash animation
+            setTimeout(function() {
+                if (splashScreen) {
+                    splashScreen.style.display = 'none';
+                }
+                
+                mainHeader.style.display = 'block';
+                content.style.display = 'flex';
+                
+                // Show bottom nav on mobile
+                if (window.innerWidth <= 768) {
+                    document.querySelector('.bottom-nav').style.display = 'flex';
+                }
+                
+                initApp();
+            }, 3500);
+            
+            // Home link click
+            homeLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                showHomePage();
+            });
+            
+            // Bottom nav home click
+            bottomHome.addEventListener('click', function(e) {
+                e.preventDefault();
+                showHomePage();
+                updateBottomNavActive(this);
+            });
+            
+            // Bottom nav discover click
+            bottomDiscover.addEventListener('click', function(e) {
+                e.preventDefault();
+                showHomePage();
+                updateBottomNavActive(this);
+                // In a real app, this would show discover content
+                alert('Discover content would be shown here');
+            });
+            
+            // Bottom nav create click
+            bottomCreate.addEventListener('click', function(e) {
+                e.preventDefault();
+                updateBottomNavActive(this);
+                
+                if (!currentUser) {
+                    alert('Please sign in to upload videos.');
+                    loginModal.style.display = 'flex';
+                    return;
+                }
+                
+                if (!currentChannel) {
+                    // Prompt to create channel first
+                    if (confirm('You need to create a channel before uploading videos. Create one now?')) {
+                        channelModal.style.display = 'flex';
+                    }
+                    return;
+                }
+                
+                uploadModal.style.display = 'flex';
+            });
+            
+            // Bottom nav inbox click
+            bottomInbox.addEventListener('click', function(e) {
+                e.preventDefault();
+                updateBottomNavActive(this);
+                // In a real app, this would show inbox
+                alert('Inbox would be shown here');
+            });
+            
+            // Bottom nav me click
+            bottomMe.addEventListener('click', function(e) {
+                e.preventDefault();
+                updateBottomNavActive(this);
+                
+                if (currentUser && currentChannel) {
+                    showChannel(currentChannel.id);
+                } else if (currentUser) {
+                    // Prompt to create channel
+                    if (confirm('You need to create a channel first. Create one now?')) {
+                        channelModal.style.display = 'flex';
+                    }
+                } else {
+                    loginModal.style.display = 'flex';
+                }
+            });
+            
+            // Update active bottom nav item
+            function updateBottomNavActive(activeItem) {
+                bottomNavItems.forEach(item => {
+                    item.classList.remove('active');
+                });
+                activeItem.classList.add('active');
+            }
+            
+            // My Channel button click
+            myChannelBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (currentChannel) {
+                    showChannel(currentChannel.id);
+                }
+            });
+            
+            // Login modal handling
+            signInBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                loginModal.style.display = 'flex';
+            });
+            
+            closeModal.addEventListener('click', function() {
+                loginModal.style.display = 'none';
+            });
+            
+            // Signup modal handling
+            showSignup.addEventListener('click', function(e) {
+                e.preventDefault();
+                loginModal.style.display = 'none';
+                signupModal.style.display = 'flex';
+            });
+            
+            closeSignupModal.addEventListener('click', function() {
+                signupModal.style.display = 'none';
+            });
+            
+            showLogin.addEventListener('click', function(e) {
+                e.preventDefault();
+                signupModal.style.display = 'none';
+                loginModal.style.display = 'flex';
+            });
+            
+            // Upload modal handling
+            uploadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!currentUser) {
+                    alert('Please sign in to upload videos.');
+                    loginModal.style.display = 'flex';
+                    return;
+                }
+                
+                if (!currentChannel) {
+                    // Prompt to create channel first
+                    if (confirm('You need to create a channel before uploading videos. Create one now?')) {
+                        channelModal.style.display = 'flex';
+                    }
+                    return;
+                }
+                
+                uploadModal.style.display = 'flex';
+            });
+            
+            closeUploadModal.addEventListener('click', function() {
+                uploadModal.style.display = 'none';
+                resetUploadForm();
+            });
+            
+            // Channel modal handling
+            closeChannelModal.addEventListener('click', function() {
+                channelModal.style.display = 'none';
+            });
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === loginModal) {
+                    loginModal.style.display = 'none';
+                }
+                if (e.target === signupModal) {
+                    signupModal.style.display = 'none';
+                }
+                if (e.target === uploadModal) {
+                    uploadModal.style.display = 'none';
+                    resetUploadForm();
+                }
+                if (e.target === channelModal) {
+                    channelModal.style.display = 'none';
+                }
+            });
+            
+            // Category selection
+            categoryItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const category = this.getAttribute('data-category');
+                    
+                    // Update active category
+                    categoryItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Filter videos
+                    renderHomeVideos(category);
+                    
+                    // Scroll category into view if needed
+                    this.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'center'
+                    });
+                });
+            });
+            
+            // Drag and drop for upload
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                uploadArea.classList.add('highlight');
+            }
+            
+            function unhighlight() {
+                uploadArea.classList.remove('highlight');
+            }
+            
+            uploadArea.addEventListener('drop', handleDrop, false);
+            uploadArea.addEventListener('click', () => videoInput.click());
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+            
+            videoInput.addEventListener('change', function() {
+                handleFiles(this.files);
+            });
+            
+            function handleFiles(files) {
+                const file = files[0];
+                if (file && file.type.startsWith('video/')) {
+                    const videoURL = URL.createObjectURL(file);
+                    videoPreview.src = videoURL;
+                    uploadPreview.style.display = 'block';
+                } else {
+                    alert('Please select a video file.');
+                }
+            }
+            
+            // Upload form submission
+            uploadSubmitBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if (!videoTitle.value.trim()) {
+                    alert('Please enter a title for your video.');
+                    return;
+                }
+                
+                if (!videoPreview.src) {
+                    alert('Please select a video to upload.');
+                    return;
+                }
+                
+                // Create new video object
+                const newVideo = {
+                    id: Date.now(),
+                    title: videoTitle.value,
+                    views: 0,
+                    likes: 0,
+                    dislikes: 0,
+                    url: videoPreview.src,
+                    author: currentChannel.name,
+                    authorInitial: currentChannel.name.charAt(0).toUpperCase(),
+                    channelId: currentChannel.id,
+                    category: videoCategory.value,
+                    uploadDate: new Date().toISOString(),
+                    description: "Check out my new video!",
+                    owner: currentUser.email
+                };
+                
+                // Add to beginning of videos array (most recent first)
+                videos.unshift(newVideo);
+                
+                // Save to localStorage
+                const userVideos = JSON.parse(localStorage.getItem('yemvideoVideos')) || [];
+                userVideos.unshift(newVideo);
+                localStorage.setItem('yemvideoVideos', JSON.stringify(userVideos));
+                
+                // Update UI
+                if (channelPage.style.display === 'block') {
+                    renderChannelVideos(currentChannel.id);
+                } else {
+                    renderHomeVideos(currentCategory);
+                }
+                
+                uploadModal.style.display = 'none';
+                resetUploadForm();
+                
+                alert('Your video has been uploaded to your channel!');
+            });
+            
+            function resetUploadForm() {
+                videoPreview.src = '';
+                uploadPreview.style.display = 'none';
+                videoTitle.value = '';
+                videoInput.value = '';
+                videoCategory.value = 'all';
+            }
+            
+            // Login form submission
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                // Simple validation (in a real app, you'd check against a database)
+                const users = JSON.parse(localStorage.getItem('yemvideoUsers')) || [];
+                const user = users.find(u => u.email === email && u.password === password);
+                
+                if (user) {
+                    currentUser = {
+                        name: user.name,
+                        email: user.email,
+                        initial: user.name.charAt(0).toUpperCase()
+                    };
+                    localStorage.setItem('yemvideoUser', JSON.stringify(currentUser));
+                    
+                    // Check if user has a channel
+                    const savedChannels = JSON.parse(localStorage.getItem('yemvideoChannels')) || [];
+                    const userChannel = savedChannels.find(c => c.owner === currentUser.email);
+                    
+                    if (userChannel) {
+                        currentChannel = userChannel;
+                    } else {
+                        // Prompt to create channel
+                        setTimeout(() => {
+                            if (confirm('Welcome to YemVideo! Would you like to create your channel now?')) {
+                                channelModal.style.display = 'flex';
+                            }
+                        }, 500);
+                    }
+                    
+                    updateUserUI();
+                    loginModal.style.display = 'none';
+                    loginForm.reset();
+                } else {
+                    alert('Invalid email or password. Please try again.');
+                }
+            });
+            
+            // Signup form submission
+            signupForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('signupName').value;
+                const email = document.getElementById('signupEmail').value;
+                const password = document.getElementById('signupPassword').value;
+                
+                // Save user (in a real app, you'd hash the password)
+                const users = JSON.parse(localStorage.getItem('yemvideoUsers')) || [];
+                
+                // Check if email already exists
+                if (users.some(u => u.email === email)) {
+                    alert('This email is already registered. Please sign in.');
+                    return;
+                }
+                
+                const newUser = { name, email, password };
+                users.push(newUser);
+                localStorage.setItem('yemvideoUsers', JSON.stringify(users));
+                
+                // Log the user in
+                currentUser = {
+                    name,
+                    email,
+                    initial: name.charAt(0).toUpperCase()
+                };
+                localStorage.setItem('yemvideoUser', JSON.stringify(currentUser));
+                
+                // Prompt to create channel
+                setTimeout(() => {
+                    if (confirm('Welcome to YemVideo! Would you like to create your channel now?')) {
+                        channelModal.style.display = 'flex';
+                    }
+                }, 500);
+                
+                updateUserUI();
+                signupModal.style.display = 'none';
+                signupForm.reset();
+            });
+            
+            // Channel form submission
+            channelForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('channelName').value;
+                const description = document.getElementById('channelDescription').value;
+                
+                if (!name.trim()) {
+                    alert('Please enter a channel name.');
+                    return;
+                }
+                
+                // Create new channel
+                const newChannel = {
+                    id: 'channel' + Date.now(),
+                    name: name,
+                    description: description,
+                    owner: currentUser.email,
+                    subscribers: 0,
+                    created: new Date().toISOString()
+                };
+                
+                // Save channel
+                const savedChannels = JSON.parse(localStorage.getItem('yemvideoChannels')) || [];
+                savedChannels.push(newChannel);
+                localStorage.setItem('yemvideoChannels', JSON.stringify(savedChannels));
+                
+                currentChannel = newChannel;
+                channels.push(newChannel);
+                
+                updateUserUI();
+                channelModal.style.display = 'none';
+                channelForm.reset();
+                
+                alert('Your channel has been created! You can now upload videos.');
+            });
+            
+            // User profile click
+            userProfile.addEventListener('click', function() {
+                if (currentChannel) {
+                    showChannel(currentChannel.id);
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth <= 768) {
+                    document.querySelector('.bottom-nav').style.display = 'flex';
+                } else {
+                    document.querySelector('.bottom-nav').style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
