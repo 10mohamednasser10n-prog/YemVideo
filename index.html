@@ -2,8 +2,127 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <title>YemVideo - The best of YouTube and TikTok</title>
+    <!--
+    ============================================================
+    YemVideo Supabase Schema
+    Run this in your Supabase project's SQL Editor (one time setup)
+    ============================================================
+
+    -- CHANNELS
+    create table if not exists channels (
+      id uuid primary key default gen_random_uuid(),
+      owner_id uuid references auth.users(id) on delete cascade not null,
+      name text not null,
+      description text default '',
+      subscribers int default 0,
+      created_at timestamptz default now()
+    );
+
+    -- VIDEOS
+    create table if not exists videos (
+      id uuid primary key default gen_random_uuid(),
+      owner_id uuid references auth.users(id) on delete cascade not null,
+      channel_id uuid references channels(id) on delete cascade not null,
+      title text not null,
+      description text default 'Check out my new video!',
+      category text default 'all',
+      video_url text not null,
+      author text not null,
+      author_initial text not null,
+      views int default 0,
+      likes int default 0,
+      dislikes int default 0,
+      created_at timestamptz default now()
+    );
+
+    -- COMMENTS
+    create table if not exists comments (
+      id uuid primary key default gen_random_uuid(),
+      video_id uuid references videos(id) on delete cascade not null,
+      author_id uuid references auth.users(id) on delete cascade not null,
+      author text not null,
+      author_initial text not null,
+      text text not null,
+      likes int default 0,
+      created_at timestamptz default now()
+    );
+
+    -- SUBSCRIPTIONS (many-to-many: user <-> channel)
+    create table if not exists subscriptions (
+      user_id uuid references auth.users(id) on delete cascade not null,
+      channel_id uuid references channels(id) on delete cascade not null,
+      created_at timestamptz default now(),
+      primary key (user_id, channel_id)
+    );
+
+    -- VIDEO REACTIONS (like / dislike, one per user per video)
+    create table if not exists video_reactions (
+      user_id uuid references auth.users(id) on delete cascade not null,
+      video_id uuid references videos(id) on delete cascade not null,
+      reaction text check (reaction in ('like', 'dislike')) not null,
+      created_at timestamptz default now(),
+      primary key (user_id, video_id)
+    );
+
+    -- ============================================================
+    -- ROW LEVEL SECURITY
+    -- ============================================================
+
+    alter table channels enable row level security;
+    alter table videos enable row level security;
+    alter table comments enable row level security;
+    alter table subscriptions enable row level security;
+    alter table video_reactions enable row level security;
+
+    -- Anyone can read
+    create policy "Public read channels" on channels for select using (true);
+    create policy "Public read videos" on videos for select using (true);
+    create policy "Public read comments" on comments for select using (true);
+    create policy "Public read subscriptions" on subscriptions for select using (true);
+    create policy "Public read reactions" on video_reactions for select using (true);
+
+    -- Only logged-in users can write, and only as themselves
+    create policy "Users insert own channels" on channels for insert with check (auth.uid() = owner_id);
+    create policy "Users update own channels" on channels for update using (auth.uid() = owner_id);
+
+    create policy "Users insert own videos" on videos for insert with check (auth.uid() = owner_id);
+    create policy "Users update own videos" on videos for update using (true); -- allows view-count increments by anyone watching
+
+    create policy "Users insert own comments" on comments for insert with check (auth.uid() = author_id);
+
+    create policy "Users manage own subscriptions" on subscriptions for insert with check (auth.uid() = user_id);
+    create policy "Users delete own subscriptions" on subscriptions for delete using (auth.uid() = user_id);
+
+    create policy "Users manage own reactions" on video_reactions for insert with check (auth.uid() = user_id);
+    create policy "Users update own reactions" on video_reactions for update using (auth.uid() = user_id);
+    create policy "Users delete own reactions" on video_reactions for delete using (auth.uid() = user_id);
+
+    -- ============================================================
+    -- STORAGE (run these, or set up via Dashboard > Storage)
+    -- ============================================================
+    -- 1. Create a bucket named "videos" and mark it PUBLIC via the Dashboard,
+    --    or run:
+    insert into storage.buckets (id, name, public) values ('videos', 'videos', true)
+    on conflict (id) do nothing;
+
+    -- Allow authenticated users to upload to the videos bucket
+    create policy "Authenticated users can upload videos"
+    on storage.objects for insert
+    with check (bucket_id = 'videos' and auth.role() = 'authenticated');
+
+    create policy "Public can view videos"
+    on storage.objects for select
+    using (bucket_id = 'videos');
+
+    -- ============================================================
+    -- SEED DATA (optional - sample videos/channels so home isn't empty)
+    -- ============================================================
+    -- Note: these sample rows use a placeholder owner_id since they aren't
+    -- owned by a real auth user. If your owner_id foreign key blocks that,
+    -- skip this section and just let real users populate the app.
+    -->
     <style>
         :root {
             --primary-color: #FF0000;
@@ -89,7 +208,7 @@
             padding: 1rem 2rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             z-index: 100;
-            display: none;
+            /* starts visible – splash covers it */
         }
 
         .header-container {
@@ -385,6 +504,18 @@
             text-decoration: underline;
         }
 
+        .form-error {
+            display: none;
+            color: #c62828;
+            background-color: #ffebee;
+            border: 1px solid #ef9a9a;
+            border-radius: 4px;
+            padding: 0.6rem 0.75rem;
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
         /* Upload Modal */
         .upload-area {
             border: 2px dashed #ccc;
@@ -478,8 +609,8 @@
             max-width: 1400px;
             margin: 2rem auto;
             gap: 2rem;
-            display: none;
             padding-bottom: 80px; /* Space for bottom nav */
+            /* starts visible – splash covers it */
         }
 
         .video-feed {
@@ -825,6 +956,7 @@
                     <label for="password">Password</label>
                     <input type="password" id="password" required placeholder="Enter your password">
                 </div>
+                <div class="form-error" id="loginError"></div>
                 <button type="submit" class="form-btn">Sign in</button>
             </form>
             <div class="form-link">
@@ -853,6 +985,7 @@
                     <label for="signupPassword">Password</label>
                     <input type="password" id="signupPassword" required placeholder="Create a password">
                 </div>
+                <div class="form-error" id="signupError"></div>
                 <button type="submit" class="form-btn">Create account</button>
             </form>
             <div class="form-link">
@@ -942,7 +1075,6 @@
                 <div class="user-profile" id="userProfile"></div>
             </nav>
         </div>
-    </header>
 
     <!-- Categories -->
     <div class="categories" id="categories">
@@ -955,7 +1087,7 @@
         <div class="category" data-category="sports">Sports</div>
         <div class="category" data-category="comedy">Comedy</div>
     </div>
-
+    </header>
     <main class="content">
         <!-- Home Page Content -->
         <section class="video-feed" id="homePage">
@@ -1029,8 +1161,39 @@
         </a>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
+        // ---- Supabase client (everything is in this single file) ----
+        // Replace these with your own Supabase project credentials if needed
+        const SUPABASE_URL = "https://vchysvyczjfapbalkyoe.supabase.co";
+        const SUPABASE_PUBLIC_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjaHlzdnljempmYXBiYWxreW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyOTU4MjgsImV4cCI6MjEwMjg3MTgyOH0.GABXSkFy88YBj_a66ckBGuUL98qiTWw7TPApXIyad10";
+
+        // Safe client creation – never crash the whole page if the library fails to load
+        // Use a unique name to avoid any "already been declared" conflicts
+        var yemSupabase = null;
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                yemSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+            } else {
+                console.warn('Supabase library not available yet. Will retry inside the app.');
+            }
+        } catch (err) {
+            console.error('Failed to create Supabase client:', err);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Retry creating the client if it wasn't ready earlier
+            if (!yemSupabase && window.supabase && typeof window.supabase.createClient === 'function') {
+                try {
+                    yemSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+                } catch (err) {
+                    console.error('Failed to create Supabase client on DOMContentLoaded:', err);
+                }
+            }
+
+            // Local alias used by the rest of the app
+            const supabase = yemSupabase;
+
             // App State
             let currentUser = null;
             let currentChannel = null;
@@ -1206,71 +1369,135 @@
                 }
             ];
             
+            // Map a Supabase video row to the shape the UI expects
+            function mapVideoRow(row) {
+                return {
+                    id: row.id,
+                    title: row.title,
+                    views: row.views,
+                    likes: row.likes,
+                    dislikes: row.dislikes,
+                    url: row.video_url,
+                    author: row.author,
+                    authorInitial: row.author_initial,
+                    channelId: row.channel_id,
+                    category: row.category,
+                    uploadDate: row.created_at,
+                    description: row.description,
+                    owner: row.owner_id
+                };
+            }
+
+            function mapChannelRow(row) {
+                return {
+                    id: row.id,
+                    name: row.name,
+                    description: row.description,
+                    owner: row.owner_id,
+                    subscribers: row.subscribers,
+                    created: row.created_at
+                };
+            }
+
+            function mapCommentRow(row) {
+                return {
+                    id: row.id,
+                    videoId: row.video_id,
+                    author: row.author,
+                    authorInitial: row.author_initial,
+                    text: row.text,
+                    date: row.created_at,
+                    likes: row.likes
+                };
+            }
+
             // Initialize the app
-            function initApp() {
-                // Load sample videos
-                videos = [...sampleVideos];
-                
-                // Load sample channels
-                channels = [...sampleChannels];
-
-                // Load sample comments
-                comments = [...sampleComments];
-                
-                // Load user data if exists
-                const savedUser = localStorage.getItem('yemvideoUser');
-                if (savedUser) {
-                    currentUser = JSON.parse(savedUser);
-                    
-                    // Load user channel if exists
-                    const savedChannels = JSON.parse(localStorage.getItem('yemvideoChannels')) || [];
-                    const userChannel = savedChannels.find(c => c.owner === currentUser.email);
-                    if (userChannel) {
-                        currentChannel = userChannel;
-                    }
-                    
-                    // Load user subscriptions
-                    const savedSubscriptions = localStorage.getItem('yemvideoSubscriptions');
-                    if (savedSubscriptions) {
-                        subscriptions = JSON.parse(savedSubscriptions);
+            async function initApp() {
+                try {
+                    // If Supabase client is missing, just show sample data
+                    if (!supabase) {
+                        console.warn('Supabase client not available – using sample data.');
+                        videos = [...sampleVideos];
+                        channels = [...sampleChannels];
+                        comments = [...sampleComments];
+                        renderHomeVideos();
+                        return;
                     }
 
-                    // Load liked/disliked videos
-                    const savedLikes = localStorage.getItem('yemvideoLikes');
-                    if (savedLikes) {
-                        likedVideos = JSON.parse(savedLikes);
+                    // Fetch channels, videos, and comments from Supabase
+                    const [{ data: channelRows, error: channelErr },
+                           { data: videoRows, error: videoErr },
+                           { data: commentRows, error: commentErr }] = await Promise.all([
+                        supabase.from('channels').select('*').order('created_at', { ascending: true }),
+                        supabase.from('videos').select('*').order('created_at', { ascending: false }),
+                        supabase.from('comments').select('*').order('created_at', { ascending: false })
+                    ]);
+
+                    if (channelErr) console.error('Error loading channels:', channelErr);
+                    if (videoErr) console.error('Error loading videos:', videoErr);
+                    if (commentErr) console.error('Error loading comments:', commentErr);
+
+                    channels = (channelRows || []).map(mapChannelRow);
+                    videos = (videoRows || []).map(mapVideoRow);
+                    comments = (commentRows || []).map(mapCommentRow);
+
+                    // Fall back to sample data only if the DB is empty (e.g. brand new project)
+                    if (channels.length === 0 && videos.length === 0) {
+                        videos = [...sampleVideos];
+                        channels = [...sampleChannels];
+                        comments = [...sampleComments];
                     }
 
-                    const savedDislikes = localStorage.getItem('yemvideoDislikes');
-                    if (savedDislikes) {
-                        dislikedVideos = JSON.parse(savedDislikes);
+                    // Check for a logged-in Supabase auth session
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        await loadCurrentUser(session.user);
                     }
-                    
-                    updateUserUI();
-                }
-                
-                // Load any user-uploaded videos
-                const savedVideos = localStorage.getItem('yemvideoVideos');
-                if (savedVideos) {
-                    const userVideos = JSON.parse(savedVideos);
-                    videos.unshift(...userVideos);
-                }
-                
-                // Load any user-created channels
-                const savedChannels = localStorage.getItem('yemvideoChannels');
-                if (savedChannels) {
-                    const userChannels = JSON.parse(savedChannels);
-                    channels.push(...userChannels);
+                } catch (err) {
+                    console.error('initApp error, falling back to sample data:', err);
+                    videos = [...sampleVideos];
+                    channels = [...sampleChannels];
+                    comments = [...sampleComments];
                 }
 
-                // Load any user comments
-                const savedComments = localStorage.getItem('yemvideoComments');
-                if (savedComments) {
-                    const userComments = JSON.parse(savedComments);
-                    comments.push(...userComments);
-                }
-                
                 renderHomeVideos();
+            }
+
+            // After login/signup/session restore: populate currentUser + related state
+            async function loadCurrentUser(authUser) {
+                currentUser = {
+                    id: authUser.id,
+                    name: authUser.user_metadata?.name || authUser.email,
+                    email: authUser.email,
+                    initial: (authUser.user_metadata?.name || authUser.email).charAt(0).toUpperCase()
+                };
+
+                // User's channel
+                const { data: userChannel } = await supabase
+                    .from('channels')
+                    .select('*')
+                    .eq('owner_id', authUser.id)
+                    .maybeSingle();
+                if (userChannel) {
+                    currentChannel = mapChannelRow(userChannel);
+                }
+
+                // User's subscriptions
+                const { data: subRows } = await supabase
+                    .from('subscriptions')
+                    .select('channel_id')
+                    .eq('user_id', authUser.id);
+                subscriptions = (subRows || []).map(r => r.channel_id);
+
+                // User's reactions (likes/dislikes)
+                const { data: reactionRows } = await supabase
+                    .from('video_reactions')
+                    .select('video_id, reaction')
+                    .eq('user_id', authUser.id);
+                likedVideos = (reactionRows || []).filter(r => r.reaction === 'like').map(r => r.video_id);
+                dislikedVideos = (reactionRows || []).filter(r => r.reaction === 'dislike').map(r => r.video_id);
+
+                updateUserUI();
             }
             
             // Format large numbers
@@ -1381,7 +1608,8 @@
                 
                 // Increment view count
                 video.views++;
-                localStorage.setItem('yemvideoVideos', JSON.stringify(videos.filter(v => v.owner === currentUser?.email)));
+                supabase.from('videos').update({ views: video.views }).eq('id', video.id)
+                    .then(({ error }) => { if (error) console.error('Error updating views:', error); });
                 
                 // Render video player
                 videoPlayerContainer.innerHTML = `
@@ -1483,68 +1711,57 @@
                 renderComments(video.id);
             }
             
-            // Toggle like on video
-            function toggleLike(videoId) {
+            // Shared helper: set/clear a reaction row and update counts
+            async function setReaction(videoId, reaction) {
                 const video = videos.find(v => v.id === videoId);
                 if (!video || !currentUser) return;
-                
-                const index = likedVideos.indexOf(videoId);
-                if (index === -1) {
-                    // Like the video
-                    likedVideos.push(videoId);
-                    video.likes++;
-                    
-                    // Remove dislike if exists
-                    const dislikeIndex = dislikedVideos.indexOf(videoId);
-                    if (dislikeIndex !== -1) {
-                        dislikedVideos.splice(dislikeIndex, 1);
-                        video.dislikes--;
-                    }
-                } else {
-                    // Unlike the video
-                    likedVideos.splice(index, 1);
-                    video.likes--;
+
+                const wasLiked = likedVideos.includes(videoId);
+                const wasDisliked = dislikedVideos.includes(videoId);
+                const alreadyThis = (reaction === 'like' && wasLiked) || (reaction === 'dislike' && wasDisliked);
+
+                // Update local state + counts optimistically
+                if (wasLiked) { likedVideos = likedVideos.filter(id => id !== videoId); video.likes--; }
+                if (wasDisliked) { dislikedVideos = dislikedVideos.filter(id => id !== videoId); video.dislikes--; }
+
+                if (!alreadyThis) {
+                    if (reaction === 'like') { likedVideos.push(videoId); video.likes++; }
+                    else { dislikedVideos.push(videoId); video.dislikes++; }
                 }
-                
-                // Save to localStorage
-                localStorage.setItem('yemvideoLikes', JSON.stringify(likedVideos));
-                localStorage.setItem('yemvideoDislikes', JSON.stringify(dislikedVideos));
-                localStorage.setItem('yemvideoVideos', JSON.stringify(videos.filter(v => v.owner === currentUser?.email)));
-                
+
+                try {
+                    if (alreadyThis) {
+                        // Remove the reaction entirely
+                        await supabase.from('video_reactions').delete()
+                            .eq('user_id', currentUser.id).eq('video_id', videoId);
+                    } else {
+                        // Upsert the new reaction (replaces like<->dislike if switching)
+                        await supabase.from('video_reactions').upsert({
+                            user_id: currentUser.id,
+                            video_id: videoId,
+                            reaction: reaction
+                        });
+                    }
+                    await supabase.from('videos').update({
+                        likes: video.likes,
+                        dislikes: video.dislikes
+                    }).eq('id', videoId);
+                } catch (err) {
+                    console.error('Error saving reaction:', err);
+                }
+
                 // Update UI
                 showVideoPage(videoId);
+            }
+
+            // Toggle like on video
+            function toggleLike(videoId) {
+                setReaction(videoId, 'like');
             }
             
             // Toggle dislike on video
             function toggleDislike(videoId) {
-                const video = videos.find(v => v.id === videoId);
-                if (!video || !currentUser) return;
-                
-                const index = dislikedVideos.indexOf(videoId);
-                if (index === -1) {
-                    // Dislike the video
-                    dislikedVideos.push(videoId);
-                    video.dislikes++;
-                    
-                    // Remove like if exists
-                    const likeIndex = likedVideos.indexOf(videoId);
-                    if (likeIndex !== -1) {
-                        likedVideos.splice(likeIndex, 1);
-                        video.likes--;
-                    }
-                } else {
-                    // Remove dislike
-                    dislikedVideos.splice(index, 1);
-                    video.dislikes--;
-                }
-                
-                // Save to localStorage
-                localStorage.setItem('yemvideoDislikes', JSON.stringify(dislikedVideos));
-                localStorage.setItem('yemvideoLikes', JSON.stringify(likedVideos));
-                localStorage.setItem('yemvideoVideos', JSON.stringify(videos.filter(v => v.owner === currentUser?.email)));
-                
-                // Update UI
-                showVideoPage(videoId);
+                setReaction(videoId, 'dislike');
             }
             
             // Toggle subscription to channel with animation
@@ -1563,19 +1780,34 @@
                 }, 500);
                 
                 const index = subscriptions.indexOf(channelId);
-                if (index === -1) {
-                    // Subscribe
+                const subscribing = index === -1;
+
+                if (subscribing) {
                     subscriptions.push(channelId);
                     channel.subscribers++;
                 } else {
-                    // Unsubscribe
                     subscriptions.splice(index, 1);
                     channel.subscribers--;
                 }
-                
-                // Save to localStorage
-                localStorage.setItem('yemvideoSubscriptions', JSON.stringify(subscriptions));
-                localStorage.setItem('yemvideoChannels', JSON.stringify(channels.filter(c => c.owner === currentUser?.email)));
+
+                (async () => {
+                    try {
+                        if (subscribing) {
+                            await supabase.from('subscriptions').upsert({
+                                user_id: currentUser.id,
+                                channel_id: channelId
+                            });
+                        } else {
+                            await supabase.from('subscriptions').delete()
+                                .eq('user_id', currentUser.id).eq('channel_id', channelId);
+                        }
+                        await supabase.from('channels').update({
+                            subscribers: channel.subscribers
+                        }).eq('id', channelId);
+                    } catch (err) {
+                        console.error('Error saving subscription:', err);
+                    }
+                })();
                 
                 // Update UI
                 setTimeout(() => {
@@ -1621,23 +1853,29 @@
                 
                 // Add comment submission handler
                 if (currentUser) {
-                    document.querySelector('.comment-submit').addEventListener('click', function() {
+                    document.querySelector('.comment-submit').addEventListener('click', async function() {
                         const commentInput = document.querySelector('.comment-input');
                         const commentText = commentInput.value.trim();
                         
                         if (commentText) {
-                            const newComment = {
-                                id: Date.now(),
-                                videoId: videoId,
-                                author: currentUser.name,
-                                authorInitial: currentUser.initial,
-                                text: commentText,
-                                date: new Date().toISOString(),
-                                likes: 0
-                            };
-                            
-                            comments.unshift(newComment);
-                            localStorage.setItem('yemvideoComments', JSON.stringify(comments.filter(c => c.author === currentUser?.name)));
+                            const { data, error } = await supabase
+                                .from('comments')
+                                .insert({
+                                    video_id: videoId,
+                                    author_id: currentUser.id,
+                                    author: currentUser.name,
+                                    author_initial: currentUser.initial,
+                                    text: commentText
+                                })
+                                .select()
+                                .single();
+
+                            if (error) {
+                                alert('Could not post comment: ' + error.message);
+                                return;
+                            }
+
+                            comments.unshift(mapCommentRow(data));
                             
                             // Clear input and refresh comments
                             commentInput.value = '';
@@ -1697,22 +1935,48 @@
                 }
             }
             
-            // Show main content after splash animation
-            setTimeout(function() {
+            // Immediately load sample data so the page is never empty
+            videos = [...sampleVideos];
+            channels = [...sampleChannels];
+            comments = [...sampleComments];
+
+            // Show main content after splash animation (always show UI even if init fails)
+            function revealApp() {
                 if (splashScreen) {
                     splashScreen.style.display = 'none';
                 }
-                
-                mainHeader.style.display = 'block';
-                content.style.display = 'flex';
+                if (mainHeader) {
+                    mainHeader.style.display = 'block';
+                    mainHeader.style.visibility = 'visible';
+                }
+                if (content) {
+                    content.style.display = 'flex';
+                    content.style.visibility = 'visible';
+                }
                 
                 // Show bottom nav on mobile
                 if (window.innerWidth <= 768) {
-                    document.querySelector('.bottom-nav').style.display = 'flex';
+                    const bn = document.querySelector('.bottom-nav');
+                    if (bn) bn.style.display = 'flex';
                 }
-                
-                initApp();
-            }, 3500);
+
+                // Always render something
+                renderHomeVideos();
+            }
+
+            setTimeout(function() {
+                revealApp();
+                initApp().catch(function(err) {
+                    console.error('initApp failed:', err);
+                    // Ensure sample videos still appear
+                    if (videos.length === 0) {
+                        videos = [...sampleVideos];
+                        channels = [...sampleChannels];
+                        comments = [...sampleComments];
+                    }
+                    renderHomeVideos();
+                });
+            }, 2000);
             
             // Home link click
             homeLink.addEventListener('click', function(e) {
@@ -1802,27 +2066,34 @@
             // Login modal handling
             signInBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                clearFormError('loginError');
                 loginModal.style.display = 'flex';
             });
             
             closeModal.addEventListener('click', function() {
                 loginModal.style.display = 'none';
+                clearFormError('loginError');
             });
             
             // Signup modal handling
             showSignup.addEventListener('click', function(e) {
                 e.preventDefault();
                 loginModal.style.display = 'none';
+                clearFormError('loginError');
+                clearFormError('signupError');
                 signupModal.style.display = 'flex';
             });
             
             closeSignupModal.addEventListener('click', function() {
                 signupModal.style.display = 'none';
+                clearFormError('signupError');
             });
             
             showLogin.addEventListener('click', function(e) {
                 e.preventDefault();
                 signupModal.style.display = 'none';
+                clearFormError('signupError');
+                clearFormError('loginError');
                 loginModal.style.display = 'flex';
             });
             
@@ -1945,7 +2216,7 @@
             }
             
             // Upload form submission
-            uploadSubmitBtn.addEventListener('click', function(e) {
+            uploadSubmitBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 
                 if (!videoTitle.value.trim()) {
@@ -1953,47 +2224,75 @@
                     return;
                 }
                 
-                if (!videoPreview.src) {
+                const file = videoInput.files[0];
+                if (!file) {
                     alert('Please select a video to upload.');
                     return;
                 }
-                
-                // Create new video object
-                const newVideo = {
-                    id: Date.now(),
-                    title: videoTitle.value,
-                    views: 0,
-                    likes: 0,
-                    dislikes: 0,
-                    url: videoPreview.src,
-                    author: currentChannel.name,
-                    authorInitial: currentChannel.name.charAt(0).toUpperCase(),
-                    channelId: currentChannel.id,
-                    category: videoCategory.value,
-                    uploadDate: new Date().toISOString(),
-                    description: "Check out my new video!",
-                    owner: currentUser.email
-                };
-                
-                // Add to beginning of videos array (most recent first)
-                videos.unshift(newVideo);
-                
-                // Save to localStorage
-                const userVideos = JSON.parse(localStorage.getItem('yemvideoVideos')) || [];
-                userVideos.unshift(newVideo);
-                localStorage.setItem('yemvideoVideos', JSON.stringify(userVideos));
-                
-                // Update UI
-                if (channelPage.style.display === 'block') {
-                    renderChannelVideos(currentChannel.id);
-                } else {
-                    renderHomeVideos(currentCategory);
+
+                if (!currentChannel) {
+                    alert('You need a channel before you can upload. Please create one first.');
+                    return;
                 }
-                
-                uploadModal.style.display = 'none';
-                resetUploadForm();
-                
-                alert('Your video has been uploaded to your channel!');
+
+                uploadSubmitBtn.disabled = true;
+                uploadSubmitBtn.textContent = 'Uploading...';
+
+                try {
+                    // 1. Upload the actual video file to Supabase Storage
+                    const filePath = `${currentUser.id}/${Date.now()}-${file.name}`;
+                    const { error: uploadError } = await supabase
+                        .storage
+                        .from('videos')
+                        .upload(filePath, file);
+
+                    if (uploadError) throw uploadError;
+
+                    // 2. Get its public URL
+                    const { data: { publicUrl } } = supabase
+                        .storage
+                        .from('videos')
+                        .getPublicUrl(filePath);
+
+                    // 3. Insert the video row
+                    const { data: videoRow, error: insertError } = await supabase
+                        .from('videos')
+                        .insert({
+                            owner_id: currentUser.id,
+                            channel_id: currentChannel.id,
+                            title: videoTitle.value,
+                            category: videoCategory.value,
+                            video_url: publicUrl,
+                            author: currentChannel.name,
+                            author_initial: currentChannel.name.charAt(0).toUpperCase(),
+                            description: "Check out my new video!"
+                        })
+                        .select()
+                        .single();
+
+                    if (insertError) throw insertError;
+
+                    // Add to beginning of videos array (most recent first)
+                    videos.unshift(mapVideoRow(videoRow));
+
+                    // Update UI
+                    if (channelPage.style.display === 'block') {
+                        renderChannelVideos(currentChannel.id);
+                    } else {
+                        renderHomeVideos(currentCategory);
+                    }
+
+                    uploadModal.style.display = 'none';
+                    resetUploadForm();
+
+                    alert('Your video has been uploaded to your channel!');
+                } catch (err) {
+                    console.error(err);
+                    alert('Upload failed: ' + (err.message || 'please try again.'));
+                } finally {
+                    uploadSubmitBtn.disabled = false;
+                    uploadSubmitBtn.textContent = 'Upload';
+                }
             });
             
             function resetUploadForm() {
@@ -2004,89 +2303,114 @@
                 videoCategory.value = 'all';
             }
             
-            // Login form submission
-            loginForm.addEventListener('submit', function(e) {
+            // Helper: show / clear form error messages
+            function showFormError(elementId, message) {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+                el.textContent = message;
+                el.style.display = 'block';
+            }
+            function clearFormError(elementId) {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+                el.textContent = '';
+                el.style.display = 'none';
+            }
+
+            // Login form submission – uses supabase.auth.signInWithPassword
+            loginForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                const email = document.getElementById('email').value;
+                clearFormError('loginError');
+
+                const email = document.getElementById('email').value.trim();
                 const password = document.getElementById('password').value;
-                
-                // Simple validation (in a real app, you'd check against a database)
-                const users = JSON.parse(localStorage.getItem('yemvideoUsers')) || [];
-                const user = users.find(u => u.email === email && u.password === password);
-                
-                if (user) {
-                    currentUser = {
-                        name: user.name,
-                        email: user.email,
-                        initial: user.name.charAt(0).toUpperCase()
-                    };
-                    localStorage.setItem('yemvideoUser', JSON.stringify(currentUser));
-                    
-                    // Check if user has a channel
-                    const savedChannels = JSON.parse(localStorage.getItem('yemvideoChannels')) || [];
-                    const userChannel = savedChannels.find(c => c.owner === currentUser.email);
-                    
-                    if (userChannel) {
-                        currentChannel = userChannel;
-                    } else {
-                        // Prompt to create channel
-                        setTimeout(() => {
-                            if (confirm('Welcome to YemVideo! Would you like to create your channel now?')) {
-                                channelModal.style.display = 'flex';
-                            }
-                        }, 500);
-                    }
-                    
-                    updateUserUI();
-                    loginModal.style.display = 'none';
-                    loginForm.reset();
-                } else {
-                    alert('Invalid email or password. Please try again.');
+
+                if (!email || !password) {
+                    showFormError('loginError', 'Please enter both email and password.');
+                    return;
+                }
+
+                if (!supabase) {
+                    showFormError('loginError', 'Authentication is not available. Please check your connection.');
+                    return;
+                }
+
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    showFormError('loginError', error.message || 'Invalid email or password. Please try again.');
+                    return;
+                }
+
+                await loadCurrentUser(data.user);
+
+                // Close modal and redirect to Home ("/")
+                loginModal.style.display = 'none';
+                loginForm.reset();
+                showHomePage();
+
+                if (!currentChannel) {
+                    setTimeout(() => {
+                        if (confirm('Welcome to YemVideo! Would you like to create your channel now?')) {
+                            channelModal.style.display = 'flex';
+                        }
+                    }, 400);
                 }
             });
             
-            // Signup form submission
-            signupForm.addEventListener('submit', function(e) {
+            // Signup form submission – uses supabase.auth.signUp
+            signupForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                const name = document.getElementById('signupName').value;
-                const email = document.getElementById('signupEmail').value;
+                clearFormError('signupError');
+
+                const name = document.getElementById('signupName').value.trim();
+                const email = document.getElementById('signupEmail').value.trim();
                 const password = document.getElementById('signupPassword').value;
-                
-                // Save user (in a real app, you'd hash the password)
-                const users = JSON.parse(localStorage.getItem('yemvideoUsers')) || [];
-                
-                // Check if email already exists
-                if (users.some(u => u.email === email)) {
-                    alert('This email is already registered. Please sign in.');
+
+                if (!name || !email || !password) {
+                    showFormError('signupError', 'Please fill in all fields.');
                     return;
                 }
-                
-                const newUser = { name, email, password };
-                users.push(newUser);
-                localStorage.setItem('yemvideoUsers', JSON.stringify(users));
-                
-                // Log the user in
-                currentUser = {
-                    name,
+
+                if (!supabase) {
+                    showFormError('signupError', 'Authentication is not available. Please check your connection.');
+                    return;
+                }
+
+                const { data, error } = await supabase.auth.signUp({
                     email,
-                    initial: name.charAt(0).toUpperCase()
-                };
-                localStorage.setItem('yemvideoUser', JSON.stringify(currentUser));
-                
-                // Prompt to create channel
+                    password,
+                    options: { data: { name } }
+                });
+
+                if (error) {
+                    showFormError('signupError', error.message || 'Could not create account. Please try again.');
+                    return;
+                }
+
+                // If email confirmation is required, there may be no active session yet
+                if (!data.session) {
+                    showFormError('signupError', 'Account created! Please check your email to confirm your address, then sign in.');
+                    // Keep the modal open so the user can read the message
+                    return;
+                }
+
+                await loadCurrentUser(data.user);
+
+                // Close modal and redirect to Home ("/")
+                signupModal.style.display = 'none';
+                signupForm.reset();
+                showHomePage();
+
                 setTimeout(() => {
                     if (confirm('Welcome to YemVideo! Would you like to create your channel now?')) {
                         channelModal.style.display = 'flex';
                     }
-                }, 500);
-                
-                updateUserUI();
-                signupModal.style.display = 'none';
-                signupForm.reset();
+                }, 400);
             });
             
             // Channel form submission
-            channelForm.addEventListener('submit', function(e) {
+            channelForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const name = document.getElementById('channelName').value;
                 const description = document.getElementById('channelDescription').value;
@@ -2095,24 +2419,24 @@
                     alert('Please enter a channel name.');
                     return;
                 }
-                
-                // Create new channel
-                const newChannel = {
-                    id: 'channel' + Date.now(),
-                    name: name,
-                    description: description,
-                    owner: currentUser.email,
-                    subscribers: 0,
-                    created: new Date().toISOString()
-                };
-                
-                // Save channel
-                const savedChannels = JSON.parse(localStorage.getItem('yemvideoChannels')) || [];
-                savedChannels.push(newChannel);
-                localStorage.setItem('yemvideoChannels', JSON.stringify(savedChannels));
-                
-                currentChannel = newChannel;
-                channels.push(newChannel);
+
+                const { data, error } = await supabase
+                    .from('channels')
+                    .insert({
+                        owner_id: currentUser.id,
+                        name: name,
+                        description: description
+                    })
+                    .select()
+                    .single();
+
+                if (error) {
+                    alert('Could not create channel: ' + error.message);
+                    return;
+                }
+
+                currentChannel = mapChannelRow(data);
+                channels.push(currentChannel);
                 
                 updateUserUI();
                 channelModal.style.display = 'none';
