@@ -482,7 +482,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 100;
+            z-index: 560;
             border-top: 1px solid rgba(0, 0, 0, 0.1);
             display: none;
         }
@@ -705,6 +705,10 @@
             z-index: 500;
         }
 
+        body.cuts-open .shorts-page {
+            height: 100%;
+        }
+
         .shorts-close-btn {
             position: fixed;
             top: 16px;
@@ -874,6 +878,10 @@
 
         .shorts-comments-sheet.open {
             transform: translateY(0);
+        }
+
+        body.cuts-open .shorts-comments-sheet {
+            bottom: 0;
         }
 
         .shorts-comments-sheet-handle {
@@ -1124,53 +1132,260 @@
         /* Channel Page */
         .channel-header {
             background-color: white;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border-radius: 8px;
+            margin-bottom: 0;
+            border-radius: 8px 8px 0 0;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .channel-banner {
+            display: none;
+            height: 118px;
+            margin: 12px 12px 0;
+            border-radius: 12px;
+            background-color: #e0e0e0;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .channel-header.has-banner .channel-banner {
+            display: block;
+        }
+
+        .channel-header.has-banner .channel-identity {
+            margin-top: -28px;
+        }
+
+        .channel-identity {
             display: flex;
             align-items: center;
-            gap: 2rem;
+            gap: 0.85rem;
+            padding: 0.85rem 1rem 0.25rem;
+            margin-top: 0;
+            position: relative;
+        }
+
+        .channel-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
         }
 
         .channel-avatar {
-            width: 100px;
-            height: 100px;
+            width: 88px;
+            height: 88px;
             background-color: #f0f0f0;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
             color: var(--primary-color);
             flex-shrink: 0;
+            border: 4px solid white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+            overflow: hidden;
         }
 
         .channel-info {
             flex-grow: 1;
+            min-width: 0;
+            padding-bottom: 0.15rem;
+        }
+
+        .channel-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.15rem;
+            flex-wrap: wrap;
         }
 
         .channel-info h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+            margin-bottom: 0;
+            line-height: 1.2;
+        }
+
+        .channel-handle {
+            color: var(--dark-gray);
+            font-size: 0.85rem;
+            margin-top: 0.1rem;
+        }
+
+        .verified-badge {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .verified-badge.visible {
+            display: inline-flex;
+        }
+
+        .verified-badge i.material-icons {
+            font-size: 12px;
+        }
+
+        .channel-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            padding: 0.65rem 1rem 0.15rem;
+        }
+
+        .channel-action-row {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .channel-action-row .channel-subscribe-btn,
+        .channel-action-row .channel-signout-btn,
+        .channel-action-row .channel-edit-btn {
+            flex: 1;
+            text-align: center;
+        }
+
+        .channel-edit-btn {
+            padding: 0.6rem 1rem;
+            background-color: #f2f2f2;
+            color: var(--text-color);
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .channel-meta {
+            padding: 0 1.25rem 0.85rem;
+        }
+
+        .channel-tabs {
+            display: flex;
+            gap: 1.25rem;
+            background-color: white;
+            border-radius: 0 0 8px 8px;
+            padding: 0 1.25rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            border-top: 1px solid #eee;
+        }
+
+        .channel-tab {
+            border: none;
+            background: transparent;
+            padding: 0.85rem 0 0.7rem;
+            border-radius: 0;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--dark-gray);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .channel-tab.active {
+            background-color: transparent;
+            color: var(--primary-color);
+        }
+
+        .channel-tab.active::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 3px 3px 0 0;
         }
 
         .channel-description {
             color: var(--dark-gray);
-            margin-bottom: 1rem;
+            margin: 0.35rem 0 0;
+            font-size: 0.9rem;
         }
 
         .channel-stats {
             display: flex;
-            gap: 1.5rem;
+            gap: 1rem;
             color: var(--dark-gray);
+            font-size: 0.9rem;
         }
 
         .channel-stat {
             display: flex;
             align-items: center;
+            gap: 0.35rem;
+        }
+
+        .channel-sorts {
+            display: none;
             gap: 0.5rem;
+            padding: 0 0.15rem 0.85rem;
+        }
+
+        .channel-sorts.visible {
+            display: flex;
+        }
+
+        .channel-sort {
+            border: none;
+            background: #f2f2f2;
+            color: var(--text-color);
+            border-radius: 16px;
+            padding: 0.35rem 0.8rem;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .channel-sort.active {
+            background: var(--text-color);
+            color: white;
+        }
+
+        .channel-video-row {
+            display: flex;
+            gap: 0.75rem;
+            background: white;
+            border-radius: 8px;
+            padding: 0.4rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            cursor: pointer;
+        }
+
+        .channel-video-row .video-thumb-wrap {
+            width: 168px;
+            flex-shrink: 0;
+        }
+
+        .channel-video-row .video-thumb {
+            border-radius: 8px;
+        }
+
+        .channel-video-row .video-info {
+            padding: 0.15rem 0.25rem 0 0;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .channel-video-row .video-info h3 {
+            font-size: 0.95rem;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
         .channel-subscribe-btn {
@@ -1225,6 +1440,10 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
+        }
+
+        #channelVideos {
+            gap: 0.75rem;
         }
 
         /* Cuts shelf on homepage */
@@ -1441,13 +1660,18 @@
         .video-player {
             width: 100%;
             max-width: 100%;
+            height: 100%;
+            aspect-ratio: 16 / 9;
             background-color: #000;
             position: relative;
         }
 
         .video-player video {
             width: 100%;
+            height: 100%;
             display: block;
+            object-fit: contain;
+            background-color: #000;
         }
 
         /* Fullscreen styles */
@@ -1620,6 +1844,7 @@
         /* Video Detail Page */
         .video-player-container {
             width: 100%;
+            aspect-ratio: 16 / 9;
             background-color: #000;
             border-radius: 8px;
             overflow: hidden;
@@ -1628,7 +1853,10 @@
 
         .video-player-container video {
             width: 100%;
+            height: 100%;
             display: block;
+            object-fit: contain;
+            background-color: #000;
         }
 
         /* Animations */
@@ -1664,16 +1892,61 @@
             }
             
             .channel-header {
-                flex-direction: column;
-                text-align: center;
+                text-align: left;
+                padding: 0;
             }
-            
+
+            .channel-banner {
+                height: 96px;
+                margin: 10px 10px 0;
+            }
+
+            .channel-identity {
+                padding: 0.7rem 0.85rem 0.2rem;
+                margin-top: -24px;
+                align-items: center;
+            }
+
             .channel-avatar {
-                margin: 0 auto;
+                width: 76px;
+                height: 76px;
+                font-size: 1.7rem;
+                margin: 0;
+            }
+
+            .channel-info h1 {
+                font-size: 1.2rem;
+            }
+
+            .channel-title-row {
+                justify-content: flex-start;
             }
             
             .channel-stats {
-                justify-content: center;
+                justify-content: flex-start;
+            }
+
+            .channel-meta {
+                padding: 0 1rem 0.75rem;
+            }
+
+            .channel-actions {
+                justify-content: flex-end;
+                width: auto;
+            }
+
+            .channel-tabs {
+                overflow-x: auto;
+                padding: 0 1rem;
+                gap: 1.1rem;
+            }
+            
+            body.cuts-open .bottom-nav {
+                display: flex;
+            }
+
+            body.cuts-open .shorts-page {
+                height: calc(100% - 60px);
             }
             
             .main-header {
@@ -1908,20 +2181,42 @@
         <!-- Channel Page Content (hidden by default) -->
         <div id="channelPage" style="display: none; width: 100%;">
             <div class="channel-header" id="channelHeader">
-                <div class="channel-avatar-wrap" style="position: relative; flex-shrink: 0;">
-                    <div class="channel-avatar" id="channelAvatar">Y</div>
-                    <button class="avatar-edit-btn" id="avatarEditBtn" style="display: none; position: absolute; bottom: 0; right: 0; width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary-color); color: white; border: 2px solid white; cursor: pointer; align-items: center; justify-content: center;">
+                <div class="channel-banner" id="channelBanner">
+                    <button class="avatar-edit-btn" id="bannerEditBtn" title="Change banner" style="display: none; position: absolute; bottom: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary-color); color: white; border: 2px solid white; cursor: pointer; align-items: center; justify-content: center;">
                         <i class="material-icons" style="font-size: 16px;">photo_camera</i>
                     </button>
-                    <input type="file" id="avatarInput" accept="image/*" style="display: none;">
                 </div>
-                <div class="channel-info">
-                    <h1 id="channelTitle">Channel Name</h1>
+                <input type="file" id="bannerInput" accept="image/*" style="display: none;">
+                <div class="channel-identity">
+                    <div class="channel-avatar-wrap">
+                        <div class="channel-avatar" id="channelAvatar">Y</div>
+                        <button class="avatar-edit-btn" id="avatarEditBtn" style="display: none; position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; border-radius: 50%; background-color: var(--primary-color); color: white; border: 2px solid white; cursor: pointer; align-items: center; justify-content: center;">
+                            <i class="material-icons" style="font-size: 15px;">photo_camera</i>
+                        </button>
+                        <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="channel-info">
+                        <div class="channel-title-row">
+                            <h1 id="channelTitle">Channel Name</h1>
+                            <span class="verified-badge" id="channelVerifiedBadge" title="Verified">
+                                <i class="material-icons">check</i>
+                            </span>
+                        </div>
+                        <div class="channel-handle" id="channelHandle">@channel</div>
+                        <div class="channel-stats">
+                            <div class="channel-stat">
+                                <span id="subscriberCount">0</span>
+                                <span>connectors</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="channel-meta">
                     <p class="channel-description" id="channelDescView">Channel description goes here</p>
-                    <div class="channel-stats">
+                    <div class="channel-stats" style="margin-top: 0.35rem;">
                         <div class="channel-stat">
-                            <span id="subscriberCount">0</span>
-                            <span>subscribers</span>
+                            <span id="connectionsCount">0</span>
+                            <span>connections</span>
                         </div>
                         <div class="channel-stat">
                             <span id="videoCount">0</span>
@@ -1929,8 +2224,26 @@
                         </div>
                     </div>
                 </div>
-                <button class="channel-subscribe-btn" id="channelSubscribeBtn" style="flex-shrink: 0;">Subscribe</button>
-                <button class="channel-signout-btn" id="channelSignOutBtn" style="display: none; flex-shrink: 0;">Sign Out</button>
+                <div class="channel-actions">
+                    <div class="channel-action-row" id="ownChannelActions" style="display: none;">
+                        <button class="channel-edit-btn" id="addBannerBtn">Add banner</button>
+                        <button class="channel-edit-btn" id="editChannelBtn">Edit Channel</button>
+                        <button class="channel-signout-btn" id="channelSignOutBtn">Sign Out</button>
+                    </div>
+                    <div class="channel-action-row" id="guestChannelActions">
+                        <button class="channel-subscribe-btn" id="channelSubscribeBtn">Connect</button>
+                    </div>
+                </div>
+            </div>
+            <div class="channel-tabs" id="channelTabs">
+                <button class="channel-tab active" data-tab="videos">Videos</button>
+                <button class="channel-tab" data-tab="cuts">Cuts</button>
+                <button class="channel-tab" data-tab="collections">Collections</button>
+            </div>
+            <div class="channel-sorts" id="channelSorts">
+                <button class="channel-sort active" data-sort="latest">Latest</button>
+                <button class="channel-sort" data-sort="popular">Popular</button>
+                <button class="channel-sort" data-sort="oldest">Oldest</button>
             </div>
             <section class="video-feed" id="channelVideos">
                 <!-- Channel videos will be loaded here -->
@@ -2289,8 +2602,21 @@
                     description: row.description,
                     owner: row.owner_id,
                     subscribers: row.subscribers,
-                    created: row.created_at
+                    created: row.created_at,
+                    bannerUrl: row.banner_url || row.bannerUrl || null
                 };
+            }
+
+            function bannerStorageKey(channelId) {
+                return 'yem_banner_' + channelId;
+            }
+
+            function rememberBanner(channelId, url) {
+                try { localStorage.setItem(bannerStorageKey(channelId), url); } catch (e) {}
+            }
+
+            function rememberedBanner(channelId) {
+                try { return localStorage.getItem(bannerStorageKey(channelId)); } catch (e) { return null; }
             }
 
             function mapCommentRow(row) {
@@ -2377,6 +2703,7 @@
                     if (profileErr) console.warn('Profiles table not available yet (run the latest SQL setup):', profileErr.message);
 
                     channels = (channelRows || []).map(mapChannelRow);
+                    channels.forEach(c => { if (!c.bannerUrl) c.bannerUrl = rememberedBanner(c.id); });
                     videos = (videoRows || []).map(mapVideoRow);
                     comments = (commentRows || []).map(mapCommentRow);
                     profileAvatars = {};
@@ -2793,19 +3120,55 @@
             // ===================== END NOTIFICATIONS =====================
             
             // Render channel videos
-            function renderChannelVideos(channelId) {
+            let currentChannelTab = 'videos';
+            let viewingChannelId = null;
+            let currentChannelSort = 'latest';
+
+            function isCutVideo(video) {
+                return video.category === 'cuts' || video.category === 'shorts';
+            }
+
+            function renderChannelVideos(channelId, tab) {
+                if (tab) currentChannelTab = tab;
                 channelVideos.innerHTML = '';
-                
-                const channelVideosList = videos.filter(v => v.channelId === channelId);
-                
-                if (channelVideosList.length === 0) {
-                    channelVideos.innerHTML = '<p>No videos uploaded yet.</p>';
+
+                const allChannelVideos = videos.filter(v => v.channelId === channelId);
+                const longVideos = allChannelVideos.filter(v => !isCutVideo(v));
+                const cutVideos = allChannelVideos.filter(v => isCutVideo(v));
+
+                if (currentChannelTab === 'collections') {
+                    channelVideos.innerHTML = '<p>No collections yet.</p>';
                     return;
                 }
-                
-                channelVideosList.forEach(video => {
-                    const videoElement = createVideoElement(video);
-                    channelVideos.appendChild(videoElement);
+
+                const sortsEl = document.getElementById('channelSorts');
+                if (sortsEl) {
+                    sortsEl.classList.toggle('visible', currentChannelTab !== 'collections');
+                }
+
+                let list = currentChannelTab === 'cuts' ? cutVideos : longVideos;
+                if (currentChannelSort === 'popular') {
+                    list = [...list].sort((a, b) => (b.views || 0) - (a.views || 0));
+                } else if (currentChannelSort === 'oldest') {
+                    list = [...list].sort((a, b) => new Date(a.uploadDate) - new Date(b.uploadDate));
+                } else {
+                    list = [...list].sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+                }
+
+                if (list.length === 0) {
+                    channelVideos.innerHTML = currentChannelTab === 'cuts'
+                        ? '<p>No Cuts uploaded yet.</p>'
+                        : '<p>No videos uploaded yet.</p>';
+                    return;
+                }
+
+                list.forEach(video => {
+                    const row = createVideoElement(video);
+                    row.classList.add('channel-video-row');
+                    if (currentChannelTab === 'cuts') {
+                        row.onclick = () => openShorts(video.id);
+                    }
+                    channelVideos.appendChild(row);
                 });
             }
             
@@ -2965,14 +3328,14 @@
                         </button>
                         <button class="action-btn ${isSubscribed ? 'subscribed' : ''}" id="subscribeBtn">
                             <i class="material-icons">notifications</i>
-                            <span>${isSubscribed ? 'Subscribed' : 'Subscribe'}</span>
+                            <span>${isSubscribed ? 'Connected' : 'Connect'}</span>
                         </button>
                     </div>
                     <div class="video-author">
                         ${avatarHtml(video.owner, video.authorInitial, 'author-avatar')}
                         <div>
                             <div>${video.author}</div>
-                            <div class="video-stats">${formatNumber(channel?.subscribers || 0)} subscribers</div>
+                            <div class="video-stats">${formatNumber(channel?.subscribers || 0)} connectors</div>
                         </div>
                         ${currentUser && video.owner === currentUser.id ? `
                             <div style="margin-left: auto; display: flex; gap: 0.5rem;">
@@ -3077,7 +3440,7 @@
                 if (subscribing) {
                     subscriptions.push(channelId);
                     channel.subscribers++;
-                    createNotification(channel.owner, 'subscribe', `${currentUser.name} subscribed to your channel`, channel.id);
+                    createNotification(channel.owner, 'subscribe', `${currentUser.name} connected with you`, channel.id);
                 } else {
                     subscriptions.splice(index, 1);
                     channel.subscribers--;
@@ -3121,6 +3484,12 @@
                     videoPage.style.display = 'none';
                 }
                 shortsPage.style.display = 'block';
+                document.body.classList.add('cuts-open');
+                if (window.innerWidth <= 768) {
+                    const bn = document.querySelector('.bottom-nav');
+                    if (bn) bn.style.display = 'flex';
+                    if (bottomDiscover) updateBottomNavActive(bottomDiscover);
+                }
 
                 if (shortsVideos.length === 0) {
                     shortsContainer.innerHTML = `
@@ -3144,6 +3513,7 @@
                 const sheet = document.getElementById('shortsCommentsSheet');
                 if (sheet) sheet.classList.remove('open');
                 shortsPage.style.display = 'none';
+                document.body.classList.remove('cuts-open');
             }
 
             function renderShorts(list, startVideoId) {
@@ -3183,7 +3553,7 @@
                             </button>
                             <button class="short-action-btn ${isSubscribed ? 'subscribed' : ''}" data-action="subscribe">
                                 <i class="material-icons">notifications</i>
-                                <span>${isSubscribed ? 'Subscribed' : 'Subscribe'}</span>
+                                <span>${isSubscribed ? 'Connected' : 'Connect'}</span>
                             </button>
                         </div>
                     `;
@@ -3253,7 +3623,7 @@
                         await toggleChannelPageSubscribe(video.channelId);
                         const nowSubscribed = subscriptions.includes(video.channelId);
                         subscribeBtn.classList.toggle('subscribed', nowSubscribed);
-                        subscribeBtn.querySelector('span').textContent = nowSubscribed ? 'Subscribed' : 'Subscribe';
+                        subscribeBtn.querySelector('span').textContent = nowSubscribed ? 'Connected' : 'Connect';
                     });
 
                     shortsContainer.appendChild(item);
@@ -3529,11 +3899,33 @@
                 homePage.style.display = 'none';
                 channelPage.style.display = 'block';
                 videoPage.style.display = 'none';
+                viewingChannelId = channelId;
                 
                 const channel = channels.find(c => c.id === channelId);
                 if (!channel) return;
                 
+                const channelHeaderEl = document.getElementById('channelHeader');
+                const channelBannerEl = document.getElementById('channelBanner');
+                const addBannerBtn = document.getElementById('addBannerBtn');
+                const bannerEditBtn = document.getElementById('bannerEditBtn');
+                if (!channel.bannerUrl) channel.bannerUrl = rememberedBanner(channel.id);
+                if (channel.bannerUrl) {
+                    if (channelHeaderEl) channelHeaderEl.classList.add('has-banner');
+                    if (channelBannerEl) channelBannerEl.style.backgroundImage = `url('${channel.bannerUrl}')`;
+                    if (addBannerBtn) addBannerBtn.style.display = 'none';
+                } else {
+                    if (channelHeaderEl) channelHeaderEl.classList.remove('has-banner');
+                    if (channelBannerEl) channelBannerEl.style.backgroundImage = '';
+                    if (addBannerBtn) addBannerBtn.style.display = '';
+                }
+                if (bannerEditBtn) bannerEditBtn.style.display = 'none';
+
                 channelTitle.textContent = channel.name;
+                const handleEl = document.getElementById('channelHandle');
+                if (handleEl) {
+                    const handle = '@' + String(channel.name || 'channel').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 24);
+                    handleEl.textContent = handle || '@channel';
+                }
                 channelDesc.textContent = channel.description || 'No description provided';
                 const channelInitial = channel.name.charAt(0).toUpperCase();
                 const channelAvatarUrl = profileAvatars[channel.owner];
@@ -3542,26 +3934,46 @@
                 } else {
                     channelAvatar.textContent = channelInitial;
                 }
+
+                const verifiedBadge = document.getElementById('channelVerifiedBadge');
+                const isVerified = (channel.subscribers || 0) >= 10000 || channel.name === 'YemVideo Team';
+                if (verifiedBadge) verifiedBadge.classList.toggle('visible', isVerified);
                 
                 // Update stats
                 const videoCount = videos.filter(v => v.channelId === channelId).length;
                 document.getElementById('videoCount').textContent = formatNumber(videoCount);
                 document.getElementById('subscriberCount').textContent = formatNumber(channel.subscribers);
+                const connectionsEl = document.getElementById('connectionsCount');
+                if (connectionsEl) {
+                    const ownChannel = currentUser && currentChannel && currentChannel.id === channelId;
+                    if (ownChannel) {
+                        connectionsEl.textContent = formatNumber(subscriptions.length);
+                    } else if (supabase && channel.owner) {
+                        connectionsEl.textContent = '0';
+                        supabase.from('subscriptions').select('channel_id', { count: 'exact', head: true }).eq('user_id', channel.owner)
+                            .then(({ count }) => {
+                                connectionsEl.textContent = formatNumber(count || 0);
+                            });
+                    } else {
+                        connectionsEl.textContent = '0';
+                    }
+                }
                 
                 // Wire up the channel subscribe button
                 const channelSubscribeBtn = document.getElementById('channelSubscribeBtn');
                 const isOwnChannel = currentUser && currentChannel && currentChannel.id === channelId;
                 const avatarEditBtn = document.getElementById('avatarEditBtn');
                 avatarEditBtn.style.display = isOwnChannel ? 'flex' : 'none';
-                document.getElementById('channelSignOutBtn').style.display = isOwnChannel ? 'inline-block' : 'none';
+                if (bannerEditBtn) bannerEditBtn.style.display = (isOwnChannel && channel.bannerUrl) ? 'flex' : 'none';
+                if (addBannerBtn) addBannerBtn.style.display = (isOwnChannel && !channel.bannerUrl) ? '' : 'none';
+                const ownActions = document.getElementById('ownChannelActions');
+                const guestActions = document.getElementById('guestChannelActions');
+                if (ownActions) ownActions.style.display = isOwnChannel ? 'flex' : 'none';
+                if (guestActions) guestActions.style.display = isOwnChannel ? 'none' : 'flex';
 
-                if (isOwnChannel) {
-                    // Can't subscribe to your own channel
-                    channelSubscribeBtn.style.display = 'none';
-                } else {
-                    channelSubscribeBtn.style.display = 'inline-block';
+                if (!isOwnChannel) {
                     const isSubscribed = currentUser && subscriptions.includes(channelId);
-                    channelSubscribeBtn.textContent = isSubscribed ? 'Subscribed' : 'Subscribe';
+                    channelSubscribeBtn.textContent = isSubscribed ? 'Connected' : 'Connect';
                     channelSubscribeBtn.classList.toggle('subscribed', isSubscribed);
 
                     channelSubscribeBtn.onclick = function() {
@@ -3573,7 +3985,11 @@
                     };
                 }
                 
-                renderChannelVideos(channelId);
+                document.querySelectorAll('#channelTabs .channel-tab').forEach(tabBtn => {
+                    tabBtn.classList.toggle('active', tabBtn.getAttribute('data-tab') === 'videos');
+                });
+                currentChannelTab = 'videos';
+                renderChannelVideos(channelId, 'videos');
             }
 
             // Subscribe/unsubscribe from the channel page itself (mirrors toggleSubscribe,
@@ -3588,7 +4004,7 @@
                 if (subscribing) {
                     subscriptions.push(channelId);
                     channel.subscribers++;
-                    createNotification(channel.owner, 'subscribe', `${currentUser.name} subscribed to your channel`, channel.id);
+                    createNotification(channel.owner, 'subscribe', `${currentUser.name} connected with you`, channel.id);
                 } else {
                     subscriptions.splice(index, 1);
                     channel.subscribers--;
@@ -3615,7 +4031,7 @@
                 document.getElementById('subscriberCount').textContent = formatNumber(channel.subscribers);
                 const channelSubscribeBtn = document.getElementById('channelSubscribeBtn');
                 const isSubscribed = subscriptions.includes(channelId);
-                channelSubscribeBtn.textContent = isSubscribed ? 'Subscribed' : 'Subscribe';
+                channelSubscribeBtn.textContent = isSubscribed ? 'Connected' : 'Connect';
                 channelSubscribeBtn.classList.toggle('subscribed', isSubscribed);
             }
             
@@ -3895,6 +4311,35 @@
                 }
             });
             
+            document.querySelectorAll('#channelTabs .channel-tab').forEach(tabBtn => {
+                tabBtn.addEventListener('click', function() {
+                    document.querySelectorAll('#channelTabs .channel-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    if (viewingChannelId) renderChannelVideos(viewingChannelId, this.getAttribute('data-tab'));
+                });
+            });
+
+            document.querySelectorAll('#channelSorts .channel-sort').forEach(sortBtn => {
+                sortBtn.addEventListener('click', function() {
+                    document.querySelectorAll('#channelSorts .channel-sort').forEach(s => s.classList.remove('active'));
+                    this.classList.add('active');
+                    currentChannelSort = this.getAttribute('data-sort');
+                    if (viewingChannelId) renderChannelVideos(viewingChannelId, currentChannelTab);
+                });
+            });
+
+            const editChannelBtn = document.getElementById('editChannelBtn');
+            if (editChannelBtn) {
+                editChannelBtn.addEventListener('click', function() {
+                    if (!currentChannel) return;
+                    document.querySelector('#channelModal h2').textContent = 'Edit Channel';
+                    document.getElementById('channelName').value = currentChannel.name || '';
+                    document.getElementById('channelDescription').value = currentChannel.description || '';
+                    channelModal.dataset.mode = 'edit';
+                    channelModal.style.display = 'flex';
+                });
+            }
+
             // Category selection
             categoryItems.forEach(item => {
                 item.addEventListener('click', function() {
@@ -4028,6 +4473,76 @@
                     avatarInput.value = '';
                 }
             });
+            const bannerInput = document.getElementById('bannerInput');
+            const addBannerBtnEl = document.getElementById('addBannerBtn');
+            const bannerEditBtnEl = document.getElementById('bannerEditBtn');
+
+            function openBannerPicker() {
+                if (!currentUser || !currentChannel) { loginModal.style.display = 'flex'; return; }
+                bannerInput.click();
+            }
+            if (addBannerBtnEl) addBannerBtnEl.addEventListener('click', openBannerPicker);
+            if (bannerEditBtnEl) bannerEditBtnEl.addEventListener('click', openBannerPicker);
+
+            if (bannerInput) {
+                bannerInput.addEventListener('change', async function() {
+                    const file = this.files[0];
+                    if (!file || !currentUser || !currentChannel) return;
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select an image file.');
+                        return;
+                    }
+
+                    const localPreview = URL.createObjectURL(file);
+                    currentChannel.bannerUrl = localPreview;
+                    const localChannel = channels.find(c => c.id === currentChannel.id);
+                    if (localChannel) localChannel.bannerUrl = localPreview;
+                    showChannel(currentChannel.id);
+
+                    try {
+                        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+                        const filePath = `${currentUser.id}/banner-${Date.now()}.${ext}`;
+                        const buckets = ['thumbnails', 'avatars', 'videos'];
+                        let publicUrl = null;
+                        let lastError = null;
+
+                        for (const bucket of buckets) {
+                            try {
+                                if (typeof uploadFileWithProgress === 'function') {
+                                    await uploadFileWithProgress(bucket, filePath, file);
+                                } else {
+                                    const { error } = await supabase.storage.from(bucket).upload(filePath, file, { upsert: true });
+                                    if (error) throw error;
+                                }
+                                publicUrl = supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl;
+                                break;
+                            } catch (bucketErr) {
+                                lastError = bucketErr;
+                            }
+                        }
+
+                        if (!publicUrl) {
+                            throw lastError || new Error('Upload failed');
+                        }
+
+                        const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+                        const { error: saveError } = await supabase.from('channels').update({ banner_url: cacheBustedUrl }).eq('id', currentChannel.id);
+                        if (saveError) {
+                            console.warn('banner_url column missing or blocked:', saveError.message);
+                        }
+
+                        currentChannel.bannerUrl = cacheBustedUrl;
+                        if (localChannel) localChannel.bannerUrl = cacheBustedUrl;
+                        rememberBanner(currentChannel.id, cacheBustedUrl);
+                        showChannel(currentChannel.id);
+                    } catch (err) {
+                        console.error(err);
+                        rememberBanner(currentChannel.id, localPreview);
+                    } finally {
+                        bannerInput.value = '';
+                    }
+                });
+            }
             // ===================== END PROFILE PICTURE =====================
             
             // Upload form submission
@@ -4395,6 +4910,34 @@
                 
                 if (!name.trim()) {
                     alert('Please enter a channel name.');
+                    return;
+                }
+
+                if (channelModal.dataset.mode === 'edit' && currentChannel) {
+                    const { data, error } = await supabase
+                        .from('channels')
+                        .update({ name: name, description: description })
+                        .eq('id', currentChannel.id)
+                        .select()
+                        .single();
+                    if (error) {
+                        alert('Could not save channel: ' + error.message);
+                        return;
+                    }
+                    currentChannel = mapChannelRow(data);
+                    const idx = channels.findIndex(c => c.id === currentChannel.id);
+                    if (idx !== -1) channels[idx] = currentChannel;
+                    videos.forEach(v => {
+                        if (v.channelId === currentChannel.id) {
+                            v.author = currentChannel.name;
+                            v.authorInitial = currentChannel.name.charAt(0).toUpperCase();
+                        }
+                    });
+                    channelModal.style.display = 'none';
+                    channelModal.dataset.mode = 'create';
+                    document.querySelector('#channelModal h2').textContent = 'Create Your Channel';
+                    channelForm.reset();
+                    showChannel(currentChannel.id);
                     return;
                 }
 
