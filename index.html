@@ -3600,21 +3600,33 @@
                     }
 
                     // 3. Insert the video row
-                    const { data: videoRow, error: insertError } = await supabase
+                    const videoRowData = {
+                        owner_id: currentUser.id,
+                        channel_id: currentChannel.id,
+                        title: videoTitle.value,
+                        category: videoCategory.value,
+                        video_url: publicUrl,
+                        thumbnail_url: thumbnailUrl,
+                        author: currentChannel.name,
+                        author_initial: currentChannel.name.charAt(0).toUpperCase(),
+                        description: videoDescription.value.trim() || "Check out my new video!"
+                    };
+
+                    let { data: videoRow, error: insertError } = await supabase
                         .from('videos')
-                        .insert({
-                            owner_id: currentUser.id,
-                            channel_id: currentChannel.id,
-                            title: videoTitle.value,
-                            category: videoCategory.value,
-                            video_url: publicUrl,
-                            thumbnail_url: thumbnailUrl,
-                            author: currentChannel.name,
-                            author_initial: currentChannel.name.charAt(0).toUpperCase(),
-                            description: videoDescription.value.trim() || "Check out my new video!"
-                        })
+                        .insert(videoRowData)
                         .select()
                         .single();
+
+                    // If the thumbnail_url column doesn't exist yet (SQL migration not run),
+                    // retry without it so the upload still succeeds.
+                    if (insertError && /thumbnail_url/i.test(insertError.message || '')) {
+                        console.warn('thumbnail_url column not found, retrying upload without a thumbnail:', insertError.message);
+                        delete videoRowData.thumbnail_url;
+                        const retry = await supabase.from('videos').insert(videoRowData).select().single();
+                        videoRow = retry.data;
+                        insertError = retry.error;
+                    }
 
                     if (insertError) throw insertError;
 
