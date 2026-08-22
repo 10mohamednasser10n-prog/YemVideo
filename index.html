@@ -1130,6 +1130,27 @@
         }
 
         /* Channel Page */
+        body.profile-open .main-header {
+            display: none !important;
+        }
+
+        .channel-back-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin: 0.25rem 0.35rem 0;
+        }
+
+        .channel-back-btn:hover {
+            background-color: #f0f0f0;
+        }
+
         .channel-header {
             background-color: white;
             margin-bottom: 0;
@@ -1446,6 +1467,126 @@
             gap: 0.75rem;
         }
 
+        .channel-cuts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .channel-cuts-item {
+            position: relative;
+            aspect-ratio: 9/16;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #000;
+            cursor: pointer;
+        }
+
+        .channel-cuts-item video,
+        .channel-cuts-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .channel-cuts-item .cuts-shelf-play {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 28px;
+            opacity: 0.85;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        .channel-cuts-item .channel-cuts-title {
+            position: absolute;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            color: white;
+            font-size: 0.72rem;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .collection-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .collection-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .collection-card .collection-thumb {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #ddd;
+            object-fit: cover;
+            display: block;
+        }
+
+        .collection-card .collection-thumb-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #ececec;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+        }
+
+        .collection-card .collection-info {
+            padding: 0.75rem 1rem;
+        }
+
+        .collection-card .collection-info h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .collection-card .collection-info span {
+            font-size: 0.8rem;
+            color: var(--dark-gray);
+        }
+
+        .new-collection-card {
+            border: 2px dashed #ccc;
+            background: none;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--dark-gray);
+            min-height: 140px;
+            aspect-ratio: 16/9;
+        }
+
+        .new-collection-card:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
         /* Cuts shelf on homepage */
         .cuts-shelf {
             display: flex;
@@ -1607,6 +1748,7 @@
             margin-top: 0.5rem;
             color: var(--dark-gray);
             font-size: 0.9rem;
+            cursor: pointer;
         }
 
         .author-avatar {
@@ -2067,6 +2209,16 @@
                     <option value="cuts">Cuts (vertical video)</option>
                 </select>
             </div>
+            <div class="form-group" id="thumbChooser">
+                <label>Thumbnail</label>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button type="button" class="channel-edit-btn" id="thumbUploadBtn">Upload image</button>
+                    <button type="button" class="channel-edit-btn" id="thumbRandomBtn">Random frame from video</button>
+                </div>
+                <input type="file" id="thumbInput" accept="image/*" style="display:none;">
+                <img id="thumbPreview" alt="Thumbnail preview" style="display:none; width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-top:0.6rem; background:#000;">
+                <p id="thumbHint" style="font-size:0.8rem; color:var(--dark-gray); margin-top:0.35rem;">Upload a picture or grab a random frame from your video.</p>
+            </div>
             <div class="upload-progress-wrap" id="uploadProgressWrap">
                 <div class="upload-progress-bar-track">
                     <div class="upload-progress-bar" id="uploadProgressBar"></div>
@@ -2127,6 +2279,30 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="collectionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>New collection</h2>
+                <button class="close-modal" id="closeCollectionModal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="collectionName">Name</label>
+                <input type="text" id="collectionName" placeholder="My collection">
+            </div>
+            <button class="form-btn" id="collectionSaveBtn">Create</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addToCollectionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add videos</h2>
+                <button class="close-modal" id="closeAddToCollectionModal">&times;</button>
+            </div>
+            <div id="addToCollectionList"></div>
+        </div>
+    </div>
+
     <header class="main-header">
         <div class="header-container">
             <div class="logo-small" id="homeLink">
@@ -2180,6 +2356,9 @@
 
         <!-- Channel Page Content (hidden by default) -->
         <div id="channelPage" style="display: none; width: 100%;">
+            <button class="channel-back-btn" id="channelBackBtn" aria-label="Back">
+                <i class="material-icons">arrow_back</i>
+            </button>
             <div class="channel-header" id="channelHeader">
                 <div class="channel-banner" id="channelBanner">
                     <button class="avatar-edit-btn" id="bannerEditBtn" title="Change banner" style="display: none; position: absolute; bottom: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary-color); color: white; border: 2px solid white; cursor: pointer; align-items: center; justify-content: center;">
@@ -2890,10 +3069,14 @@
                     (v.description || '').toLowerCase().includes(q) ||
                     v.author.toLowerCase().includes(q)
                 );
+                const channelResults = channels.filter(c =>
+                    (c.name || '').toLowerCase().includes(q) ||
+                    (c.description || '').toLowerCase().includes(q)
+                );
 
                 homePage.innerHTML = `
                     <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 style="font-weight: 500;">Search results for "${query}" (${results.length})</h3>
+                        <h3 style="font-weight: 500;">Search results for "${query}"</h3>
                         <button id="clearSearchBtn" style="background: none; border: none; color: var(--primary-color); cursor: pointer; font-weight: 500; font-size: 0.9rem;">Clear</button>
                     </div>
                 `;
@@ -2902,17 +3085,50 @@
                     renderHomeVideos('all');
                 });
 
-                if (results.length === 0) {
-                    const emptyMsg = document.createElement('p');
-                    emptyMsg.style.marginTop = '1rem';
-                    emptyMsg.textContent = 'No videos found. Try a different search.';
-                    homePage.appendChild(emptyMsg);
-                    return;
+                if (channelResults.length) {
+                    const heading = document.createElement('h4');
+                    heading.style.margin = '1rem 0 0.5rem';
+                    heading.textContent = 'Channels';
+                    homePage.appendChild(heading);
+                    channelResults.forEach(channel => {
+                        const row = document.createElement('div');
+                        row.className = 'channel-video-row';
+                        row.style.alignItems = 'center';
+                        const initial = (channel.name || 'C').charAt(0).toUpperCase();
+                        row.innerHTML = `
+                            ${avatarHtml(channel.owner, initial, 'author-avatar')}
+                            <div class="video-info">
+                                <h3>${channel.name}</h3>
+                                <div class="video-stats">${formatNumber(channel.subscribers || 0)} connectors</div>
+                            </div>
+                        `;
+                        const av = row.querySelector('.author-avatar');
+                        if (av) {
+                            av.style.width = '48px';
+                            av.style.height = '48px';
+                            av.style.fontSize = '1.1rem';
+                        }
+                        row.addEventListener('click', () => openChannel(channel.id));
+                        homePage.appendChild(row);
+                    });
                 }
 
-                results.forEach(video => {
-                    homePage.appendChild(createVideoElement(video));
-                });
+                if (results.length) {
+                    const heading = document.createElement('h4');
+                    heading.style.margin = '1rem 0 0.5rem';
+                    heading.textContent = 'Videos';
+                    homePage.appendChild(heading);
+                    results.forEach(video => {
+                        homePage.appendChild(createVideoElement(video));
+                    });
+                }
+
+                if (!channelResults.length && !results.length) {
+                    const emptyMsg = document.createElement('p');
+                    emptyMsg.style.marginTop = '1rem';
+                    emptyMsg.textContent = 'No channels or videos found. Try a different search.';
+                    homePage.appendChild(emptyMsg);
+                }
             }
 
             function performSearchFromPage(query) {
@@ -2932,17 +3148,39 @@
                     const matches = videos
                         .filter(v => v.title.toLowerCase().includes(q))
                         .slice(0, 8);
+                    const channelMatches = channels
+                        .filter(c => (c.name || '').toLowerCase().includes(q))
+                        .slice(0, 6);
 
-                    searchPageContent.innerHTML = matches.length ? `
-                        <div class="suggestions-label">Matching videos</div>
-                        <div id="suggestionsList"></div>
-                    ` : `
-                        <div class="dark-empty-state">
-                            <i class="material-icons">search_off</i>
-                            <div>No matches yet — press Enter to search anyway</div>
-                        </div>
+                    if (!matches.length && !channelMatches.length) {
+                        searchPageContent.innerHTML = `
+                            <div class="dark-empty-state">
+                                <i class="material-icons">search_off</i>
+                                <div>No matches yet — press Enter to search anyway</div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    searchPageContent.innerHTML = `
+                        ${channelMatches.length ? `<div class="suggestions-label">Channels</div><div id="channelSuggestionsList"></div>` : ''}
+                        ${matches.length ? `<div class="suggestions-label">Matching videos</div><div id="suggestionsList"></div>` : ''}
                     `;
 
+                    if (channelMatches.length) {
+                        const list = document.getElementById('channelSuggestionsList');
+                        channelMatches.forEach(c => {
+                            const item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            item.innerHTML = `<i class="material-icons">account_circle</i><span class="suggestion-text">${c.name}</span>`;
+                            item.addEventListener('click', () => {
+                                addRecentSearch(c.name);
+                                closeSearchPage();
+                                openChannel(c.id);
+                            });
+                            list.appendChild(item);
+                        });
+                    }
                     if (matches.length) {
                         const list = document.getElementById('suggestionsList');
                         matches.forEach(v => {
@@ -3123,30 +3361,248 @@
             let currentChannelTab = 'videos';
             let viewingChannelId = null;
             let currentChannelSort = 'latest';
+            let channelCollections = [];
+            let viewingCollectionId = null;
 
             function isCutVideo(video) {
                 return video.category === 'cuts' || video.category === 'shorts';
             }
 
+            async function loadChannelCollections(channelId) {
+                channelCollections = [];
+                if (supabase) {
+                    const { data, error } = await supabase
+                        .from('collections')
+                        .select('*')
+                        .eq('channel_id', channelId)
+                        .order('created_at', { ascending: false });
+                    if (!error && data) {
+                        const ids = data.map(c => c.id);
+                        let links = [];
+                        if (ids.length) {
+                            const { data: linkRows } = await supabase
+                                .from('collection_videos')
+                                .select('*')
+                                .in('collection_id', ids);
+                            links = linkRows || [];
+                        }
+                        channelCollections = data.map(row => ({
+                            id: row.id,
+                            name: row.name,
+                            ownerId: row.owner_id,
+                            channelId: row.channel_id,
+                            videoIds: links.filter(l => l.collection_id === row.id).map(l => l.video_id)
+                        }));
+                    }
+                }
+            }
+
+            function collectionThumb(col) {
+                const first = videos.find(v => col.videoIds.includes(v.id));
+                if (first && first.thumbnailUrl) return first.thumbnailUrl;
+                return null;
+            }
+
+            function renderCollectionsGrid(channelId) {
+                channelVideos.innerHTML = '';
+                const grid = document.createElement('div');
+                grid.className = 'collections-grid';
+
+                const isOwn = currentUser && currentChannel && currentChannel.id === channelId;
+                if (isOwn) {
+                    const createCard = document.createElement('div');
+                    createCard.className = 'collection-card new-collection-card';
+                    createCard.innerHTML = `<i class="material-icons">add</i><span>New collection</span>`;
+                    createCard.addEventListener('click', () => {
+                        document.getElementById('collectionName').value = '';
+                        document.getElementById('collectionModal').style.display = 'flex';
+                    });
+                    grid.appendChild(createCard);
+                }
+
+                channelCollections.forEach(col => {
+                    const card = document.createElement('div');
+                    card.className = 'collection-card';
+                    const thumb = collectionThumb(col);
+                    card.innerHTML = `
+                        ${thumb
+                            ? `<img class="collection-thumb" src="${thumb}" alt="${col.name}">`
+                            : `<div class="collection-thumb-placeholder"><i class="material-icons">video_library</i></div>`}
+                        <div class="collection-info">
+                            <h4>${col.name}</h4>
+                            <span>${col.videoIds.length} video${col.videoIds.length === 1 ? '' : 's'}</span>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => openCollection(col.id));
+                    grid.appendChild(card);
+                });
+
+                if (!isOwn && channelCollections.length === 0) {
+                    channelVideos.innerHTML = '<p>No collections yet.</p>';
+                    return;
+                }
+                channelVideos.appendChild(grid);
+            }
+
+            function openCollection(collectionId) {
+                viewingCollectionId = collectionId;
+                const col = channelCollections.find(c => c.id === collectionId);
+                if (!col) return;
+                channelVideos.innerHTML = '';
+
+                const header = document.createElement('div');
+                header.style.display = 'flex';
+                header.style.alignItems = 'center';
+                header.style.justifyContent = 'space-between';
+                header.style.gap = '0.75rem';
+                header.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <button type="button" id="backToCollections" class="channel-edit-btn" style="flex:none;padding:0.35rem 0.7rem;">Back</button>
+                        <h3 style="font-size:1.05rem;">${col.name}</h3>
+                    </div>
+                    <span style="color:var(--dark-gray);font-size:0.85rem;">${col.videoIds.length} videos</span>
+                `;
+                channelVideos.appendChild(header);
+                header.querySelector('#backToCollections').addEventListener('click', () => {
+                    viewingCollectionId = null;
+                    renderCollectionsGrid(viewingChannelId);
+                });
+
+                const isOwn = currentUser && currentChannel && currentChannel.id === viewingChannelId;
+                if (isOwn) {
+                    const addBtn = document.createElement('button');
+                    addBtn.className = 'channel-edit-btn';
+                    addBtn.textContent = 'Add videos';
+                    addBtn.style.margin = '0.25rem 0 0.5rem';
+                    addBtn.addEventListener('click', () => openAddToCollectionModal(col));
+                    channelVideos.appendChild(addBtn);
+                }
+
+                const list = videos.filter(v => col.videoIds.includes(v.id));
+                if (!list.length) {
+                    const empty = document.createElement('p');
+                    empty.textContent = 'No videos in this collection yet.';
+                    channelVideos.appendChild(empty);
+                    return;
+                }
+                list.forEach(video => {
+                    const row = createVideoElement(video);
+                    row.classList.add('channel-video-row');
+                    channelVideos.appendChild(row);
+                });
+            }
+
+            function openAddToCollectionModal(col) {
+                const box = document.getElementById('addToCollectionList');
+                const modal = document.getElementById('addToCollectionModal');
+                const ownVideos = videos.filter(v => v.channelId === viewingChannelId);
+                box.innerHTML = '';
+                if (!ownVideos.length) {
+                    box.innerHTML = '<p>Upload videos first, then add them here.</p>';
+                    modal.style.display = 'flex';
+                    return;
+                }
+                ownVideos.forEach(video => {
+                    const already = col.videoIds.includes(video.id);
+                    const row = document.createElement('button');
+                    row.type = 'button';
+                    row.className = 'channel-edit-btn';
+                    row.style.width = '100%';
+                    row.style.marginBottom = '0.45rem';
+                    row.textContent = (already ? 'Added · ' : 'Add · ') + video.title;
+                    row.disabled = already;
+                    row.addEventListener('click', async () => {
+                        await addVideoToCollection(col, video.id);
+                        row.textContent = 'Added · ' + video.title;
+                        row.disabled = true;
+                    });
+                    box.appendChild(row);
+                });
+                modal.style.display = 'flex';
+            }
+
+            async function addVideoToCollection(col, videoId) {
+                if (col.videoIds.includes(videoId)) return;
+                col.videoIds.push(videoId);
+                if (supabase) {
+                    const { error } = await supabase.from('collection_videos').insert({
+                        collection_id: col.id,
+                        video_id: videoId
+                    });
+                    if (error) console.warn('Could not save collection video:', error.message);
+                }
+                if (viewingCollectionId === col.id) openCollection(col.id);
+            }
+
+            async function createCollection(name) {
+                if (!currentUser || !currentChannel) return;
+                let created = {
+                    id: 'local-' + Date.now(),
+                    name,
+                    ownerId: currentUser.id,
+                    channelId: currentChannel.id,
+                    videoIds: []
+                };
+                if (supabase) {
+                    const { data, error } = await supabase.from('collections').insert({
+                        channel_id: currentChannel.id,
+                        owner_id: currentUser.id,
+                        name
+                    }).select().single();
+                    if (error) {
+                        alert('Could not create collection: ' + error.message + '\nRun the collections SQL if you have not yet.');
+                        return;
+                    }
+                    created = { id: data.id, name: data.name, ownerId: data.owner_id, channelId: data.channel_id, videoIds: [] };
+                }
+                channelCollections.unshift(created);
+                renderCollectionsGrid(currentChannel.id);
+            }
+
             function renderChannelVideos(channelId, tab) {
                 if (tab) currentChannelTab = tab;
                 channelVideos.innerHTML = '';
+                viewingCollectionId = null;
 
                 const allChannelVideos = videos.filter(v => v.channelId === channelId);
                 const longVideos = allChannelVideos.filter(v => !isCutVideo(v));
                 const cutVideos = allChannelVideos.filter(v => isCutVideo(v));
 
+                const sortsEl = document.getElementById('channelSorts');
+                if (sortsEl) {
+                    sortsEl.classList.toggle('visible', currentChannelTab === 'videos');
+                }
+
                 if (currentChannelTab === 'collections') {
-                    channelVideos.innerHTML = '<p>No collections yet.</p>';
+                    loadChannelCollections(channelId).then(() => renderCollectionsGrid(channelId));
                     return;
                 }
 
-                const sortsEl = document.getElementById('channelSorts');
-                if (sortsEl) {
-                    sortsEl.classList.toggle('visible', currentChannelTab !== 'collections');
+                if (currentChannelTab === 'cuts') {
+                    if (cutVideos.length === 0) {
+                        channelVideos.innerHTML = '<p>No Cuts uploaded yet.</p>';
+                        return;
+                    }
+                    const grid = document.createElement('div');
+                    grid.className = 'channel-cuts-grid';
+                    cutVideos.forEach(video => {
+                        const item = document.createElement('div');
+                        item.className = 'channel-cuts-item';
+                        item.innerHTML = `
+                            ${video.thumbnailUrl
+                                ? `<img src="${video.thumbnailUrl}" alt="${video.title}">`
+                                : `<video src="${video.url}" muted playsinline preload="metadata"></video>`}
+                            <i class="material-icons cuts-shelf-play">play_arrow</i>
+                            <div class="channel-cuts-title">${video.title}</div>
+                        `;
+                        item.addEventListener('click', () => openShorts(video.id));
+                        grid.appendChild(item);
+                    });
+                    channelVideos.appendChild(grid);
+                    return;
                 }
 
-                let list = currentChannelTab === 'cuts' ? cutVideos : longVideos;
+                let list = longVideos;
                 if (currentChannelSort === 'popular') {
                     list = [...list].sort((a, b) => (b.views || 0) - (a.views || 0));
                 } else if (currentChannelSort === 'oldest') {
@@ -3156,18 +3612,13 @@
                 }
 
                 if (list.length === 0) {
-                    channelVideos.innerHTML = currentChannelTab === 'cuts'
-                        ? '<p>No Cuts uploaded yet.</p>'
-                        : '<p>No videos uploaded yet.</p>';
+                    channelVideos.innerHTML = '<p>No videos uploaded yet.</p>';
                     return;
                 }
 
                 list.forEach(video => {
                     const row = createVideoElement(video);
                     row.classList.add('channel-video-row');
-                    if (currentChannelTab === 'cuts') {
-                        row.onclick = () => openShorts(video.id);
-                    }
                     channelVideos.appendChild(row);
                 });
             }
@@ -3199,7 +3650,7 @@
                             <span>•</span>
                             <span>${formatDate(video.uploadDate)}</span>
                         </div>
-                        <div class="video-author">
+                        <div class="video-author" data-open-channel="${video.channelId || ''}">
                             ${avatarHtml(video.owner, video.authorInitial, 'author-avatar')}
                             <span>${video.author}</span>
                         </div>
@@ -3209,6 +3660,11 @@
                 // Click anywhere on the thumbnail/info to open the video
                 videoElement.addEventListener('click', function(e) {
                     if (e.target.closest('.video-owner-actions')) return;
+                    if (e.target.closest('.video-author')) {
+                        e.stopPropagation();
+                        openChannel(video.channelId, video);
+                        return;
+                    }
                     showVideoPage(video.id);
                 });
 
@@ -3232,6 +3688,7 @@
                 homePage.style.display = 'none';
                 channelPage.style.display = 'none';
                 videoPage.style.display = 'block';
+                setProfileHeaderHidden(false);
                 
                 const isNewVideo = currentVideoId !== videoId;
                 currentVideoId = videoId;
@@ -3305,8 +3762,8 @@
                 const video = videos.find(v => v.id === videoId);
                 if (!video) return;
 
-                const channel = channels.find(c => c.id === video.channelId);
-                const isSubscribed = currentUser && subscriptions.includes(channel.id);
+                const channel = ensureChannel(video.channelId, video);
+                const isSubscribed = currentUser && channel && subscriptions.includes(channel.id);
                 const isLiked = currentUser && likedVideos.includes(video.id);
                 const isDisliked = currentUser && dislikedVideos.includes(video.id);
                 
@@ -3331,7 +3788,7 @@
                             <span>${isSubscribed ? 'Connected' : 'Connect'}</span>
                         </button>
                     </div>
-                    <div class="video-author">
+                    <div class="video-author" id="videoPageAuthor">
                         ${avatarHtml(video.owner, video.authorInitial, 'author-avatar')}
                         <div>
                             <div>${video.author}</div>
@@ -3351,6 +3808,10 @@
                 
                 // Add event listeners for actions
                 if (currentUser) {
+                    const videoPageAuthor = document.getElementById('videoPageAuthor');
+                    if (videoPageAuthor) {
+                        videoPageAuthor.addEventListener('click', () => openChannel(video.channelId, video));
+                    }
                     document.getElementById('likeBtn').addEventListener('click', () => toggleLike(video.id));
                     document.getElementById('dislikeBtn').addEventListener('click', () => toggleDislike(video.id));
                     document.getElementById('subscribeBtn').addEventListener('click', () => toggleSubscribe(channel.id));
@@ -3363,6 +3824,11 @@
                     document.getElementById('likeBtn').addEventListener('click', () => loginModal.style.display = 'flex');
                     document.getElementById('dislikeBtn').addEventListener('click', () => loginModal.style.display = 'flex');
                     document.getElementById('subscribeBtn').addEventListener('click', () => loginModal.style.display = 'flex');
+                }
+
+                const videoPageAuthor = document.getElementById('videoPageAuthor');
+                if (videoPageAuthor) {
+                    videoPageAuthor.addEventListener('click', () => openChannel(video.channelId, video));
                 }
             }
             
@@ -3485,6 +3951,7 @@
                 }
                 shortsPage.style.display = 'block';
                 document.body.classList.add('cuts-open');
+                setProfileHeaderHidden(false);
                 if (window.innerWidth <= 768) {
                     const bn = document.querySelector('.bottom-nav');
                     if (bn) bn.style.display = 'flex';
@@ -3536,7 +4003,7 @@
                             <i class="material-icons">volume_off</i>
                         </button>
                         <div class="short-overlay-bottom">
-                            <div class="short-channel">
+                            <div class="short-channel" data-action="open-channel">
                                 ${avatarHtml(video.owner, video.authorInitial, 'author-avatar')}
                                 <span>${video.author}</span>
                             </div>
@@ -3564,6 +4031,7 @@
                     const likeBtn = item.querySelector('[data-action="like"]');
                     const commentBtn = item.querySelector('[data-action="comment"]');
                     const subscribeBtn = item.querySelector('[data-action="subscribe"]');
+                    const channelBtn = item.querySelector('[data-action="open-channel"]');
 
                     // Like this short (used by both the like button and double-tap)
                     async function likeThisShort() {
@@ -3596,6 +4064,15 @@
                             }, 250);
                         }
                     });
+
+                    if (channelBtn) {
+                        channelBtn.style.cursor = 'pointer';
+                        channelBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            closeShorts();
+                            openChannel(video.channelId, video);
+                        });
+                    }
 
                     // Mute/unmute
                     muteBtn.addEventListener('click', () => {
@@ -3894,15 +4371,52 @@
             }
             
             // Show channel page
+            function ensureChannel(channelId, fallbackVideo) {
+                let channel = channels.find(c => c.id === channelId);
+                if (channel) return channel;
+                if (!channelId && fallbackVideo) {
+                    channel = channels.find(c => c.owner === fallbackVideo.owner || c.name === fallbackVideo.author);
+                    if (channel) return channel;
+                }
+                if (fallbackVideo) {
+                    channel = {
+                        id: channelId || ('temp-' + fallbackVideo.owner),
+                        name: fallbackVideo.author,
+                        description: '',
+                        owner: fallbackVideo.owner,
+                        subscribers: 0,
+                        created: fallbackVideo.uploadDate,
+                        bannerUrl: null
+                    };
+                    channels.push(channel);
+                    return channel;
+                }
+                return null;
+            }
+
+            function openChannel(channelId, fallbackVideo) {
+                const channel = ensureChannel(channelId, fallbackVideo);
+                if (!channel) return;
+                showChannel(channel.id);
+            }
+
+            function setProfileHeaderHidden(hidden) {
+                document.body.classList.toggle('profile-open', !!hidden);
+            }
+
             function showChannel(channelId) {
                 if (shortsPage.style.display === 'block') closeShorts();
                 homePage.style.display = 'none';
                 channelPage.style.display = 'block';
                 videoPage.style.display = 'none';
                 viewingChannelId = channelId;
+                setProfileHeaderHidden(true);
                 
-                const channel = channels.find(c => c.id === channelId);
-                if (!channel) return;
+                const channel = ensureChannel(channelId);
+                if (!channel) {
+                    setProfileHeaderHidden(false);
+                    return;
+                }
                 
                 const channelHeaderEl = document.getElementById('channelHeader');
                 const channelBannerEl = document.getElementById('channelBanner');
@@ -4041,6 +4555,7 @@
                 homePage.style.display = 'block';
                 channelPage.style.display = 'none';
                 videoPage.style.display = 'none';
+                setProfileHeaderHidden(false);
                 renderHomeVideos(currentCategory);
             }
             
@@ -4109,6 +4624,38 @@
                 e.preventDefault();
                 showHomePage();
             });
+
+            const collectionModal = document.getElementById('collectionModal');
+            const closeCollectionModal = document.getElementById('closeCollectionModal');
+            const collectionSaveBtn = document.getElementById('collectionSaveBtn');
+            if (closeCollectionModal) {
+                closeCollectionModal.addEventListener('click', () => { collectionModal.style.display = 'none'; });
+            }
+            if (collectionSaveBtn) {
+                collectionSaveBtn.addEventListener('click', async () => {
+                    const name = (document.getElementById('collectionName').value || '').trim();
+                    if (!name) {
+                        alert('Please enter a collection name.');
+                        return;
+                    }
+                    await createCollection(name);
+                    collectionModal.style.display = 'none';
+                });
+            }
+            const closeAddToCollectionModal = document.getElementById('closeAddToCollectionModal');
+            if (closeAddToCollectionModal) {
+                closeAddToCollectionModal.addEventListener('click', () => {
+                    document.getElementById('addToCollectionModal').style.display = 'none';
+                });
+            }
+
+            const channelBackBtn = document.getElementById('channelBackBtn');
+            if (channelBackBtn) {
+                channelBackBtn.addEventListener('click', function() {
+                    showHomePage();
+                    updateBottomNavActive(bottomHome);
+                });
+            }
             
             // Bottom nav home click
             bottomHome.addEventListener('click', function(e) {
@@ -4305,6 +4852,10 @@
                 if (e.target === channelModal) {
                     channelModal.style.display = 'none';
                 }
+                const collectionModalEl = document.getElementById('collectionModal');
+                const addToCollectionModalEl = document.getElementById('addToCollectionModal');
+                if (collectionModalEl && e.target === collectionModalEl) collectionModalEl.style.display = 'none';
+                if (addToCollectionModalEl && e.target === addToCollectionModalEl) addToCollectionModalEl.style.display = 'none';
                 if (e.target === editVideoModal) {
                     editVideoModal.style.display = 'none';
                     editingVideoId = null;
@@ -4406,6 +4957,12 @@
                     const videoURL = URL.createObjectURL(file);
                     videoPreview.src = videoURL;
                     uploadPreview.style.display = 'block';
+                    chosenThumbBlob = null;
+                    if (thumbPreview) {
+                        thumbPreview.src = '';
+                        thumbPreview.style.display = 'none';
+                    }
+                    if (thumbHint) thumbHint.textContent = 'Upload a picture or grab a random frame from your video.';
                 } else {
                     alert('Please select a video file.');
                 }
@@ -4579,31 +5136,99 @@
 
             // Grabs a frame from a video file and returns it as a JPEG Blob,
             // for a lightweight thumbnail instead of loading the full video in feeds.
-            function generateThumbnail(file) {
+            function captureFrameFromVideoEl(videoEl) {
+                return new Promise((resolve) => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = videoEl.videoWidth || 320;
+                        canvas.height = videoEl.videoHeight || 180;
+                        canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+                    } catch (err) {
+                        resolve(null);
+                    }
+                });
+            }
+
+            function generateThumbnail(file, atTime) {
                 return new Promise((resolve) => {
                     const tempVideo = document.createElement('video');
                     tempVideo.muted = true;
                     tempVideo.playsInline = true;
+                    tempVideo.preload = 'auto';
                     tempVideo.src = URL.createObjectURL(file);
 
                     const cleanup = () => URL.revokeObjectURL(tempVideo.src);
 
-                    tempVideo.addEventListener('loadeddata', () => {
-                        tempVideo.currentTime = Math.min(1, (tempVideo.duration || 2) * 0.1);
+                    tempVideo.addEventListener('loadedmetadata', () => {
+                        const duration = tempVideo.duration || 2;
+                        let t = typeof atTime === 'number' ? atTime : Math.min(1, duration * 0.1);
+                        t = Math.max(0.05, Math.min(duration - 0.1, t));
+                        tempVideo.currentTime = t;
                     });
-                    tempVideo.addEventListener('seeked', () => {
-                        try {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = tempVideo.videoWidth || 320;
-                            canvas.height = tempVideo.videoHeight || 180;
-                            canvas.getContext('2d').drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-                            canvas.toBlob((blob) => { cleanup(); resolve(blob); }, 'image/jpeg', 0.8);
-                        } catch (err) {
-                            cleanup();
-                            resolve(null);
-                        }
+                    tempVideo.addEventListener('seeked', async () => {
+                        const blob = await captureFrameFromVideoEl(tempVideo);
+                        cleanup();
+                        resolve(blob);
                     });
                     tempVideo.addEventListener('error', () => { cleanup(); resolve(null); });
+                });
+            }
+
+            let chosenThumbBlob = null;
+            const thumbInput = document.getElementById('thumbInput');
+            const thumbPreview = document.getElementById('thumbPreview');
+            const thumbHint = document.getElementById('thumbHint');
+            const thumbUploadBtn = document.getElementById('thumbUploadBtn');
+            const thumbRandomBtn = document.getElementById('thumbRandomBtn');
+
+            function showThumbPreview(blob) {
+                if (!blob || !thumbPreview) return;
+                chosenThumbBlob = blob;
+                thumbPreview.src = URL.createObjectURL(blob);
+                thumbPreview.style.display = 'block';
+            }
+
+            if (thumbUploadBtn && thumbInput) {
+                thumbUploadBtn.addEventListener('click', () => thumbInput.click());
+            }
+            if (thumbInput) {
+                thumbInput.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (!file || !file.type.startsWith('image/')) {
+                        alert('Please select an image file.');
+                        return;
+                    }
+                    chosenThumbBlob = file;
+                    showThumbPreview(file);
+                    if (thumbHint) thumbHint.textContent = 'Using your uploaded image.';
+                });
+            }
+            if (thumbRandomBtn) {
+                thumbRandomBtn.addEventListener('click', async function() {
+                    const file = videoInput.files[0];
+                    if (!file) {
+                        alert('Select a video first, then pick a random frame.');
+                        return;
+                    }
+                    thumbRandomBtn.disabled = true;
+                    thumbRandomBtn.textContent = 'Picking frame...';
+                    try {
+                        let atTime = null;
+                        if (videoPreview && videoPreview.duration && isFinite(videoPreview.duration)) {
+                            atTime = Math.random() * Math.max(0.2, videoPreview.duration - 0.2);
+                        }
+                        const blob = await generateThumbnail(file, atTime);
+                        if (!blob) {
+                            alert('Could not grab a frame from this video. Try another video or upload an image.');
+                            return;
+                        }
+                        showThumbPreview(blob);
+                        if (thumbHint) thumbHint.textContent = 'Using a random frame. Tap again for a different one.';
+                    } finally {
+                        thumbRandomBtn.disabled = false;
+                        thumbRandomBtn.textContent = 'Random frame from video';
+                    }
                 });
             }
 
@@ -4643,15 +5268,23 @@
 
                     const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(filePath);
 
-                    // 2. Generate + upload a thumbnail (best-effort; video still uploads if this fails)
+                    // 2. Thumbnail: uploaded image, chosen random frame, or auto frame
                     let thumbnailUrl = null;
                     try {
-                        const thumbBlob = await generateThumbnail(file);
+                        let thumbBlob = chosenThumbBlob;
+                        if (!thumbBlob) thumbBlob = await generateThumbnail(file);
                         if (thumbBlob) {
                             const thumbPath = `${currentUser.id}/${Date.now()}-thumb.jpg`;
-                            const { error: thumbErr } = await supabase.storage.from('thumbnails').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
-                            if (!thumbErr) {
+                            try {
+                                await uploadFileWithProgress('thumbnails', thumbPath, thumbBlob);
                                 thumbnailUrl = supabase.storage.from('thumbnails').getPublicUrl(thumbPath).data.publicUrl;
+                            } catch (thumbUploadErr) {
+                                const { error: thumbErr } = await supabase.storage.from('thumbnails').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
+                                if (!thumbErr) {
+                                    thumbnailUrl = supabase.storage.from('thumbnails').getPublicUrl(thumbPath).data.publicUrl;
+                                } else {
+                                    console.warn('Thumbnail upload failed:', thumbErr.message || thumbUploadErr);
+                                }
                             }
                         }
                     } catch (thumbErr) {
@@ -4720,6 +5353,13 @@
                 videoDescription.value = '';
                 videoInput.value = '';
                 videoCategory.value = 'all';
+                chosenThumbBlob = null;
+                if (thumbInput) thumbInput.value = '';
+                if (thumbPreview) {
+                    thumbPreview.src = '';
+                    thumbPreview.style.display = 'none';
+                }
+                if (thumbHint) thumbHint.textContent = 'Upload a picture or grab a random frame from your video.';
                 setUploadProgress(0);
             }
 
