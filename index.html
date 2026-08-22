@@ -187,6 +187,28 @@
     create policy "Public can view thumbnails"
     on storage.objects for select
     using (bucket_id = 'thumbnails');
+
+    -- ============================================================
+    -- UPDATE: real notifications (subscribes, comments, replies)
+    -- Run this block too (safe to re-run, everything is guarded)
+    -- ============================================================
+
+    create table if not exists notifications (
+      id uuid primary key default gen_random_uuid(),
+      user_id uuid references auth.users(id) on delete cascade not null, -- recipient
+      actor_id uuid references auth.users(id) on delete cascade,          -- who triggered it
+      type text check (type in ('subscribe', 'comment', 'reply')) not null,
+      message text not null,
+      related_id uuid,
+      is_read boolean default false,
+      created_at timestamptz default now()
+    );
+    alter table notifications enable row level security;
+    create policy "Users read own notifications" on notifications for select using (auth.uid() = user_id);
+    -- Any signed-in user can create a notification (e.g. subscribing creates one for the
+    -- channel owner) — the app only ever writes them as a side effect of a real action.
+    create policy "Authenticated users can create notifications" on notifications for insert with check (auth.role() = 'authenticated');
+    create policy "Users mark own notifications read" on notifications for update using (auth.uid() = user_id);
     -->
     <style>
         :root {
@@ -314,26 +336,44 @@
             background-color: white;
         }
 
-        .search-bar {
+        .header-icons {
             display: flex;
-            width: 40%;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .search-bar input {
-            width: 100%;
-            padding: 0.5rem 1rem;
-            border: 1px solid #ccc;
-            border-radius: 20px 0 0 20px;
-            font-size: 1rem;
-        }
-
-        .search-button {
-            background-color: var(--light-gray);
-            border: 1px solid #ccc;
-            border-left: none;
-            border-radius: 0 20px 20px 0;
-            padding: 0 1rem;
+        .header-icon-btn {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background-color: transparent;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .header-icon-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .header-icon-btn i.material-icons {
+            font-size: 24px;
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            border: 2px solid white;
         }
 
         .user-nav {
@@ -468,6 +508,192 @@
         }
 
         /* Shorts */
+        /* Search & Notifications pages (dark, full-screen, dedicated) */
+        .dark-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0c0c0c;
+            color: #fff;
+            z-index: 600;
+            flex-direction: column;
+            animation: darkPageIn 0.2s ease-out;
+        }
+
+        .dark-page.open {
+            display: flex;
+        }
+
+        @keyframes darkPageIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dark-page-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+
+        .dark-page-back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background-color: transparent;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.15s;
+        }
+
+        .dark-page-back:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .dark-page-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .dark-search-input {
+            flex: 1;
+            background-color: #1c1c1c;
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #fff;
+            padding: 0.7rem 1rem;
+            border-radius: 24px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .dark-search-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .dark-search-input::placeholder {
+            color: #888;
+        }
+
+        .dark-page-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 1rem 2rem;
+        }
+
+        .suggestions-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
+            margin: 1.25rem 0 0.5rem;
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            padding: 0.8rem 0.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .suggestion-item:hover, .suggestion-item:active {
+            background-color: rgba(255,255,255,0.06);
+        }
+
+        .suggestion-item i.material-icons {
+            color: #888;
+            font-size: 20px;
+        }
+
+        .suggestion-item .suggestion-text {
+            font-size: 0.95rem;
+            color: #eee;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dark-empty-state {
+            text-align: center;
+            color: #888;
+            padding: 3rem 1rem;
+        }
+
+        .dark-empty-state i.material-icons {
+            font-size: 40px;
+            opacity: 0.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-item {
+            display: flex;
+            gap: 0.9rem;
+            padding: 0.9rem 0.5rem;
+            border-radius: 10px;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        .notification-item.unread {
+            background-color: rgba(255,0,0,0.06);
+        }
+
+        .notification-item .notification-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: #1c1c1c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification-item .notification-icon i.material-icons {
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+
+        .notification-item .notification-body {
+            flex: 1;
+        }
+
+        .notification-item .notification-message {
+            font-size: 0.92rem;
+            color: #eee;
+            line-height: 1.4;
+        }
+
+        .notification-item .notification-time {
+            font-size: 0.78rem;
+            color: #888;
+            margin-top: 0.2rem;
+        }
+
+        .notification-item.unread::after {
+            content: '';
+            position: absolute;
+            top: 1.1rem;
+            right: 0.5rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+        }
+
         .shorts-page {
             display: none;
             position: fixed;
@@ -968,6 +1194,22 @@
             color: var(--text-color);
         }
 
+        .channel-signout-btn {
+            padding: 0.6rem 1.5rem;
+            background-color: white;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .channel-signout-btn:hover {
+            background-color: #fff0f0;
+        }
+
         /* Main Content */
         .content {
             display: flex;
@@ -1421,10 +1663,6 @@
                 flex-direction: column;
             }
             
-            .search-bar {
-                display: none;
-            }
-            
             .channel-header {
                 flex-direction: column;
                 text-align: center;
@@ -1627,12 +1865,13 @@
                 </div>
                 <span>YemVideo</span>
             </div>
-            <div class="search-bar">
-                <input type="text" placeholder="Search videos...">
-                <button class="search-button">
-                    <svg viewBox="0 0 24 24" width="24" height="24">
-                        <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
+            <div class="header-icons">
+                <button class="header-icon-btn" id="headerNotifBtn" aria-label="Notifications">
+                    <i class="material-icons">notifications</i>
+                    <span class="notif-badge" id="notifBadge" style="display: none;"></span>
+                </button>
+                <button class="header-icon-btn" id="headerSearchBtn" aria-label="Search">
+                    <i class="material-icons">search</i>
                 </button>
             </div>
             <nav class="user-nav">
@@ -1691,6 +1930,7 @@
                     </div>
                 </div>
                 <button class="channel-subscribe-btn" id="channelSubscribeBtn" style="flex-shrink: 0;">Subscribe</button>
+                <button class="channel-signout-btn" id="channelSignOutBtn" style="display: none; flex-shrink: 0;">Sign Out</button>
             </div>
             <section class="video-feed" id="channelVideos">
                 <!-- Channel videos will be loaded here -->
@@ -1732,7 +1972,7 @@
         </a>
         <a href="#" class="nav-item" id="bottomInbox">
             <i class="material-icons nav-icon">notifications</i>
-            <span>Inbox</span>
+            <span>Alerts</span>
         </a>
         <a href="#" class="nav-item" id="bottomMe">
             <i class="material-icons nav-icon">account_circle</i>
@@ -1755,6 +1995,32 @@
                 </button>
             </div>
             <div id="shortsCommentsContent"></div>
+        </div>
+    </div>
+
+    <!-- Search Page (dedicated full-screen dark page) -->
+    <div id="searchPage" class="dark-page">
+        <div class="dark-page-header">
+            <button class="dark-page-back" id="searchBackBtn" aria-label="Back">
+                <i class="material-icons">arrow_back</i>
+            </button>
+            <input type="text" id="searchPageInput" class="dark-search-input" placeholder="Search YemVideo" autocomplete="off">
+        </div>
+        <div class="dark-page-content" id="searchPageContent">
+            <!-- Suggestions rendered here -->
+        </div>
+    </div>
+
+    <!-- Notifications Page (dedicated full-screen dark page) -->
+    <div id="notificationsPage" class="dark-page">
+        <div class="dark-page-header">
+            <button class="dark-page-back" id="notifBackBtn" aria-label="Back">
+                <i class="material-icons">arrow_back</i>
+            </button>
+            <h2 class="dark-page-title">Notifications</h2>
+        </div>
+        <div class="dark-page-content" id="notificationsContent">
+            <!-- Notifications rendered here -->
         </div>
     </div>
 
@@ -1804,14 +2070,23 @@
             let currentVideoId = null;
             let profileAvatars = {}; // ownerId -> avatar_url
             let likedComments = [];  // comment ids the current user has liked
+            let notifications = []; // real notifications from Supabase, for the logged-in user
             
             // DOM Elements
             const splashScreen = document.querySelector('.splash-screen');
             const mainHeader = document.querySelector('.main-header');
             const content = document.querySelector('.content');
             const homePage = document.getElementById('homePage');
-            const searchInput = document.querySelector('.search-bar input');
-            const searchButton = document.querySelector('.search-button');
+            const headerSearchBtn = document.getElementById('headerSearchBtn');
+            const headerNotifBtn = document.getElementById('headerNotifBtn');
+            const notifBadge = document.getElementById('notifBadge');
+            const searchPage = document.getElementById('searchPage');
+            const searchPageInput = document.getElementById('searchPageInput');
+            const searchPageContent = document.getElementById('searchPageContent');
+            const searchBackBtn = document.getElementById('searchBackBtn');
+            const notificationsPage = document.getElementById('notificationsPage');
+            const notificationsContent = document.getElementById('notificationsContent');
+            const notifBackBtn = document.getElementById('notifBackBtn');
             const channelPage = document.getElementById('channelPage');
             const videoPage = document.getElementById('videoPage');
             const homeLink = document.getElementById('homeLink');
@@ -2032,6 +2307,36 @@
                 };
             }
 
+            function mapNotificationRow(row) {
+                return {
+                    id: row.id,
+                    userId: row.user_id,
+                    actorId: row.actor_id,
+                    type: row.type,
+                    message: row.message,
+                    relatedId: row.related_id,
+                    isRead: row.is_read,
+                    createdAt: row.created_at
+                };
+            }
+
+            // Writes a real notification row as a side effect of a real user action
+            // (subscribing, commenting, replying). Never called with placeholder data.
+            async function createNotification(recipientUserId, type, message, relatedId) {
+                if (!currentUser || recipientUserId === currentUser.id) return; // don't notify yourself
+                try {
+                    await supabase.from('notifications').insert({
+                        user_id: recipientUserId,
+                        actor_id: currentUser.id,
+                        type: type,
+                        message: message,
+                        related_id: relatedId || null
+                    });
+                } catch (err) {
+                    console.warn('Could not create notification (has the notifications SQL migration been run?):', err.message || err);
+                }
+            }
+
             // Render an avatar: uses the user's uploaded profile picture if we have
             // one cached, otherwise falls back to the existing initials-circle look.
             function avatarHtml(ownerId, initial, cssClass) {
@@ -2142,6 +2447,7 @@
                 if (commentLikeErr) console.warn('comment_likes table not available yet (run the latest SQL setup):', commentLikeErr.message);
                 likedComments = (commentLikeRows || []).map(r => r.comment_id);
 
+                await fetchNotifications();
                 updateUserUI();
             }
             
@@ -2225,6 +2531,23 @@
             }
 
             // ===================== SEARCH =====================
+            const RECENT_SEARCHES_KEY = 'yemvideo_recent_searches';
+
+            function getRecentSearches() {
+                try {
+                    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY)) || [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function addRecentSearch(query) {
+                let recent = getRecentSearches().filter(q => q.toLowerCase() !== query.toLowerCase());
+                recent.unshift(query);
+                recent = recent.slice(0, 8);
+                localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent));
+            }
+
             function renderSearchResults(query) {
                 query = query.trim();
                 if (!query) { renderHomeVideos('all'); return; }
@@ -2249,7 +2572,6 @@
                 `;
 
                 document.getElementById('clearSearchBtn').addEventListener('click', () => {
-                    searchInput.value = '';
                     renderHomeVideos('all');
                 });
 
@@ -2266,18 +2588,209 @@
                 });
             }
 
-            searchButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                renderSearchResults(searchInput.value);
+            function performSearchFromPage(query) {
+                query = query.trim();
+                if (!query) return;
+                addRecentSearch(query);
+                closeSearchPage();
+                renderSearchResults(query);
+                updateBottomNavActive(bottomHome);
+            }
+
+            function renderSearchSuggestions(typedQuery) {
+                const q = (typedQuery || '').trim().toLowerCase();
+
+                if (q) {
+                    // Live-filter real video titles as the person types
+                    const matches = videos
+                        .filter(v => v.title.toLowerCase().includes(q))
+                        .slice(0, 8);
+
+                    searchPageContent.innerHTML = matches.length ? `
+                        <div class="suggestions-label">Matching videos</div>
+                        <div id="suggestionsList"></div>
+                    ` : `
+                        <div class="dark-empty-state">
+                            <i class="material-icons">search_off</i>
+                            <div>No matches yet — press Enter to search anyway</div>
+                        </div>
+                    `;
+
+                    if (matches.length) {
+                        const list = document.getElementById('suggestionsList');
+                        matches.forEach(v => {
+                            const item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            item.innerHTML = `<i class="material-icons">play_circle_outline</i><span class="suggestion-text">${v.title}</span>`;
+                            item.addEventListener('click', () => performSearchFromPage(v.title));
+                            list.appendChild(item);
+                        });
+                    }
+                    return;
+                }
+
+                // No query yet: show real recent searches + real trending (most-viewed) videos
+                const recent = getRecentSearches();
+                const trending = [...videos].sort((a, b) => b.views - a.views).slice(0, 6);
+
+                let html = '';
+                if (recent.length) {
+                    html += `<div class="suggestions-label">Recent</div><div id="recentList"></div>`;
+                }
+                if (trending.length) {
+                    html += `<div class="suggestions-label">Trending on YemVideo</div><div id="trendingList"></div>`;
+                }
+                if (!recent.length && !trending.length) {
+                    html = `
+                        <div class="dark-empty-state">
+                            <i class="material-icons">search</i>
+                            <div>Search for videos, channels, or topics</div>
+                        </div>
+                    `;
+                }
+                searchPageContent.innerHTML = html;
+
+                if (recent.length) {
+                    const list = document.getElementById('recentList');
+                    recent.forEach(term => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<i class="material-icons">history</i><span class="suggestion-text">${term}</span>`;
+                        item.addEventListener('click', () => performSearchFromPage(term));
+                        list.appendChild(item);
+                    });
+                }
+                if (trending.length) {
+                    const list = document.getElementById('trendingList');
+                    trending.forEach(v => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `<i class="material-icons">trending_up</i><span class="suggestion-text">${v.title}</span>`;
+                        item.addEventListener('click', () => performSearchFromPage(v.title));
+                        list.appendChild(item);
+                    });
+                }
+            }
+
+            function openSearchPage() {
+                searchPage.classList.add('open');
+                searchPageInput.value = '';
+                renderSearchSuggestions('');
+                setTimeout(() => searchPageInput.focus(), 50);
+            }
+
+            function closeSearchPage() {
+                searchPage.classList.remove('open');
+            }
+
+            headerSearchBtn.addEventListener('click', openSearchPage);
+            searchBackBtn.addEventListener('click', closeSearchPage);
+
+            searchPageInput.addEventListener('input', function() {
+                renderSearchSuggestions(this.value);
             });
 
-            searchInput.addEventListener('keydown', function(e) {
+            searchPageInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    renderSearchResults(searchInput.value);
+                    performSearchFromPage(this.value);
                 }
             });
             // ===================== END SEARCH =====================
+
+            // ===================== NOTIFICATIONS =====================
+            async function fetchNotifications() {
+                if (!currentUser) { notifications = []; updateNotifBadge(); return; }
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+
+                if (error) {
+                    console.warn('Could not load notifications (has the notifications SQL migration been run?):', error.message);
+                    notifications = [];
+                } else {
+                    notifications = (data || []).map(mapNotificationRow);
+                }
+                updateNotifBadge();
+            }
+
+            function updateNotifBadge() {
+                const hasUnread = notifications.some(n => !n.isRead);
+                notifBadge.style.display = hasUnread ? 'block' : 'none';
+            }
+
+            function notificationIcon(type) {
+                if (type === 'subscribe') return 'person_add';
+                if (type === 'comment') return 'chat_bubble_outline';
+                if (type === 'reply') return 'reply';
+                return 'notifications';
+            }
+
+            function renderNotificationsList() {
+                if (!currentUser) {
+                    notificationsContent.innerHTML = `
+                        <div class="dark-empty-state">
+                            <i class="material-icons">lock_outline</i>
+                            <div>Sign in to see your notifications</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (notifications.length === 0) {
+                    notificationsContent.innerHTML = `
+                        <div class="dark-empty-state">
+                            <i class="material-icons">notifications_none</i>
+                            <div>No notifications yet</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                notificationsContent.innerHTML = '';
+                notifications.forEach(n => {
+                    const item = document.createElement('div');
+                    item.className = 'notification-item' + (n.isRead ? '' : ' unread');
+                    item.innerHTML = `
+                        <div class="notification-icon"><i class="material-icons">${notificationIcon(n.type)}</i></div>
+                        <div class="notification-body">
+                            <div class="notification-message">${n.message}</div>
+                            <div class="notification-time">${formatDate(n.createdAt)}</div>
+                        </div>
+                    `;
+                    notificationsContent.appendChild(item);
+                });
+            }
+
+            async function openNotificationsPage() {
+                notificationsPage.classList.add('open');
+                await fetchNotifications();
+                renderNotificationsList();
+
+                // Mark everything as read now that the person has seen them
+                const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
+                if (unreadIds.length && currentUser) {
+                    notifications.forEach(n => n.isRead = true);
+                    updateNotifBadge();
+                    try {
+                        await supabase.from('notifications').update({ is_read: true })
+                            .eq('user_id', currentUser.id).in('id', unreadIds);
+                    } catch (err) {
+                        console.warn('Could not mark notifications read:', err);
+                    }
+                }
+            }
+
+            function closeNotificationsPage() {
+                notificationsPage.classList.remove('open');
+            }
+
+            headerNotifBtn.addEventListener('click', openNotificationsPage);
+            notifBackBtn.addEventListener('click', closeNotificationsPage);
+            // ===================== END NOTIFICATIONS =====================
             
             // Render channel videos
             function renderChannelVideos(channelId) {
@@ -2564,6 +3077,7 @@
                 if (subscribing) {
                     subscriptions.push(channelId);
                     channel.subscribers++;
+                    createNotification(channel.owner, 'subscribe', `${currentUser.name} subscribed to your channel`, channel.id);
                 } else {
                     subscriptions.splice(index, 1);
                     channel.subscribers--;
@@ -2858,6 +3372,11 @@
                             }
 
                             comments.unshift(mapCommentRow(data));
+
+                            const video = videos.find(v => v.id === videoId);
+                            if (video) {
+                                createNotification(video.owner, 'comment', `${currentUser.name} commented on your video "${video.title}"`, video.id);
+                            }
                             
                             // Clear input and refresh comments
                             commentInput.value = '';
@@ -2934,6 +3453,11 @@
                     }
 
                     comments.unshift(mapCommentRow(data));
+
+                    if (comment.authorId) {
+                        createNotification(comment.authorId, 'reply', `${currentUser.name} replied to your comment`, comment.id);
+                    }
+
                     replyInput.value = '';
                     renderComments(videoId, containerEl);
                 });
@@ -3029,6 +3553,7 @@
                 const isOwnChannel = currentUser && currentChannel && currentChannel.id === channelId;
                 const avatarEditBtn = document.getElementById('avatarEditBtn');
                 avatarEditBtn.style.display = isOwnChannel ? 'flex' : 'none';
+                document.getElementById('channelSignOutBtn').style.display = isOwnChannel ? 'inline-block' : 'none';
 
                 if (isOwnChannel) {
                     // Can't subscribe to your own channel
@@ -3063,6 +3588,7 @@
                 if (subscribing) {
                     subscriptions.push(channelId);
                     channel.subscribers++;
+                    createNotification(channel.owner, 'subscribe', `${currentUser.name} subscribed to your channel`, channel.id);
                 } else {
                     subscriptions.splice(index, 1);
                     channel.subscribers--;
@@ -3204,12 +3730,15 @@
                 uploadModal.style.display = 'flex';
             });
             
-            // Bottom nav inbox click
+            // Bottom nav alerts click
             bottomInbox.addEventListener('click', function(e) {
                 e.preventDefault();
                 updateBottomNavActive(this);
-                // In a real app, this would show inbox
-                alert('Inbox would be shown here');
+                if (!currentUser) {
+                    loginModal.style.display = 'flex';
+                    return;
+                }
+                openNotificationsPage();
             });
             
             // Bottom nav me click
@@ -3255,9 +3784,7 @@
                 }
             });
 
-            document.getElementById('dropdownSignOut').addEventListener('click', async function(e) {
-                e.preventDefault();
-                userDropdown.classList.remove('open');
+            async function signOutUser() {
                 await supabase.auth.signOut();
                 currentUser = null;
                 currentChannel = null;
@@ -3265,9 +3792,22 @@
                 likedVideos = [];
                 dislikedVideos = [];
                 likedComments = [];
+                notifications = [];
+                updateNotifBadge();
                 updateUserUI();
                 showHomePage();
                 updateBottomNavActive(bottomHome);
+            }
+
+            document.getElementById('dropdownSignOut').addEventListener('click', async function(e) {
+                e.preventDefault();
+                userDropdown.classList.remove('open');
+                await signOutUser();
+            });
+
+            document.getElementById('channelSignOutBtn').addEventListener('click', async function(e) {
+                e.preventDefault();
+                await signOutUser();
             });
             
             // Login modal handling
@@ -3348,6 +3888,10 @@
                 }
                 if (e.target === channelModal) {
                     channelModal.style.display = 'none';
+                }
+                if (e.target === editVideoModal) {
+                    editVideoModal.style.display = 'none';
+                    editingVideoId = null;
                 }
             });
             
@@ -3675,6 +4219,7 @@
 
             closeEditVideoModal.addEventListener('click', () => {
                 editVideoModal.style.display = 'none';
+                editingVideoId = null;
             });
 
             editVideoSubmitBtn.addEventListener('click', async function() {
