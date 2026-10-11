@@ -473,6 +473,21 @@
             background-color: var(--primary-color);
             border: 2px solid white;
         }
+        .notif-badge.has-count {
+            top: 2px;
+            right: 0;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            box-sizing: border-box;
+            border-radius: 9px;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+        }
 
         .user-nav {
             display: flex;
@@ -934,6 +949,48 @@
             border-radius: 50%;
             background-color: var(--primary-color);
         }
+
+        .notification-item { cursor: pointer; }
+        .notification-item:hover { background-color: rgba(255,255,255,0.05); }
+        .notification-item.unread:hover { background-color: rgba(255,0,0,0.1); }
+        .notif-avatar-wrap { position: relative; flex-shrink: 0; width: 44px; height: 44px; }
+        .notif-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background-color: #2a2a2a; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 1.1rem; object-fit: cover;
+        }
+        .notif-type-icon {
+            position: absolute; right: -4px; bottom: -4px;
+            width: 20px; height: 20px; border-radius: 50%;
+            background-color: var(--primary-color);
+            border: 2px solid #0f0f0f;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .notif-type-icon i.material-icons { font-size: 12px; color: #fff; }
+        .notif-thumb {
+            width: 86px; height: 48px; border-radius: 6px;
+            object-fit: cover; background: #1c1c1c; flex-shrink: 0;
+        }
+        .notif-remove {
+            background: none; border: none; color: #888; cursor: pointer;
+            padding: 4px; border-radius: 50%; flex-shrink: 0; align-self: center;
+        }
+        .notif-remove:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .notif-remove i.material-icons { font-size: 18px; }
+        .notification-item.unread::after { display: none; }
+        .notification-item.unread .notification-message { font-weight: 600; }
+        .notif-group-label {
+            font-size: 0.95rem; font-weight: 600; color: #fff;
+            padding: 1rem 0.5rem 0.3rem;
+        }
+        .notif-toolbar { display: flex; justify-content: flex-end; padding: 0.2rem 0.5rem; }
+        .notif-markall {
+            background: none; border: none; color: #3ea6ff; cursor: pointer;
+            font-size: 0.85rem; padding: 0.4rem 0.6rem;
+        }
+        .notif-markall:disabled { color: #666; cursor: default; }
+
 
         .shorts-page {
             display: none;
@@ -3536,6 +3593,29 @@
                 }
             }
 
+            // Tells every subscriber of a channel that a new video is up.
+            async function notifySubscribersOfUpload(channel, videoRow) {
+                if (!currentUser || !channel || !videoRow) return;
+                try {
+                    const { data: subs, error } = await supabase
+                        .from('subscriptions').select('user_id').eq('channel_id', channel.id);
+                    if (error || !subs || !subs.length) return;
+                    const rows = subs
+                        .map(r => r.user_id)
+                        .filter(uid => uid && uid !== currentUser.id)
+                        .map(uid => ({
+                            user_id: uid,
+                            actor_id: currentUser.id,
+                            type: 'upload',
+                            message: `${channel.name} uploaded: ${videoRow.title}`,
+                            related_id: videoRow.id
+                        }));
+                    if (rows.length) await supabase.from('notifications').insert(rows);
+                } catch (err) {
+                    console.warn('Could not notify subscribers:', err.message || err);
+                }
+            }
+
             // Render an avatar: uses the user's uploaded profile picture if we have
             // one cached, otherwise falls back to the existing initials-circle look.
             function avatarHtml(ownerId, initial, cssClass) {
@@ -3699,6 +3779,7 @@
                 likedComments = (commentLikeRows || []).map(r => r.comment_id);
 
                 await fetchNotifications();
+                startNotificationLive();
                 updateUserUI();
             }
             
@@ -4292,7 +4373,101 @@
                 if (type === 'subscribe') return 'person_add';
                 if (type === 'comment') return 'chat_bubble_outline';
                 if (type === 'reply') return 'reply';
+                if (type === 'upload') return 'smart_display';
+                if (type === 'like') return 'thumb_up';
                 return 'notifications';
+            }
+
+            function notifEscape(str) {
+                return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            }
+
+            // "5 minutes ago", "3 hours ago", "2 days ago" (YouTube style)
+            function notifTimeAgo(dateString) {
+                const secs = Math.max(0, Math.floor((Date.now() - new Date(dateString).getTime()) / 1000));
+                if (secs < 60) return 'Just now';
+                const mins = Math.floor(secs / 60);
+                if (mins < 60) return mins + (mins === 1 ? ' minute ago' : ' minutes ago');
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+                const days = Math.floor(hrs / 24);
+                if (days < 7) return days + (days === 1 ? ' day ago' : ' days ago');
+                const weeks = Math.floor(days / 7);
+                if (days < 30) return weeks + (weeks === 1 ? ' week ago' : ' weeks ago');
+                const months = Math.floor(days / 30);
+                if (days < 365) return months + (months === 1 ? ' month ago' : ' months ago');
+                const yrs = Math.floor(days / 365);
+                return yrs + (yrs === 1 ? ' year ago' : ' years ago');
+            }
+
+            function notifGroupLabel(dateString) {
+                const days = Math.floor((Date.now() - new Date(dateString).getTime()) / 86400000);
+                if (days < 1) return 'Today';
+                if (days < 7) return 'This week';
+                if (days < 30) return 'This month';
+                return 'Earlier';
+            }
+
+            // Which video (if any) a notification points at
+            function notifVideoFor(n) {
+                if (n.type === 'upload' || n.type === 'comment' || n.type === 'like') {
+                    return videos.find(v => v.id === n.relatedId) || null;
+                }
+                if (n.type === 'reply') {
+                    const c = comments.find(c => c.id === n.relatedId);
+                    return c ? (videos.find(v => v.id === c.videoId) || null) : null;
+                }
+                return null;
+            }
+
+            function updateNotifBadge() {
+                const unread = notifications.filter(n => !n.isRead).length;
+                if (unread > 0) {
+                    notifBadge.textContent = unread > 9 ? '9+' : String(unread);
+                    notifBadge.classList.add('has-count');
+                    notifBadge.style.display = 'flex';
+                } else {
+                    notifBadge.textContent = '';
+                    notifBadge.classList.remove('has-count');
+                    notifBadge.style.display = 'none';
+                }
+            }
+
+            async function markNotificationsRead(ids) {
+                if (!ids.length || !currentUser) return;
+                notifications.forEach(n => { if (ids.includes(n.id)) n.isRead = true; });
+                updateNotifBadge();
+                try {
+                    await supabase.from('notifications').update({ is_read: true })
+                        .eq('user_id', currentUser.id).in('id', ids);
+                } catch (err) {
+                    console.warn('Could not mark notifications read:', err);
+                }
+            }
+
+            async function removeNotification(id) {
+                notifications = notifications.filter(n => n.id !== id);
+                updateNotifBadge();
+                renderNotificationsList();
+                try {
+                    await supabase.from('notifications').delete().eq('id', id).eq('user_id', currentUser.id);
+                } catch (err) {
+                    console.warn('Could not remove notification:', err);
+                }
+            }
+
+            function openNotification(n) {
+                markNotificationsRead([n.id]);
+                const video = notifVideoFor(n);
+                closeNotificationsPage();
+                if (video) {
+                    showVideoPage(video.id);
+                    return;
+                }
+                if (n.type === 'subscribe') {
+                    const ch = channels.find(c => c.owner === n.actorId);
+                    if (ch) openChannel(ch.id);
+                }
             }
 
             function renderNotificationsList() {
@@ -4310,23 +4485,68 @@
                     notificationsContent.innerHTML = `
                         <div class="dark-empty-state">
                             <i class="material-icons">notifications_none</i>
-                            <div>No notifications yet</div>
+                            <div>Your notifications live here</div>
+                            <div style="font-size:0.85rem;color:#888;margin-top:0.4rem;">Subscribe to channels to get notified about their new videos.</div>
                         </div>
                     `;
                     return;
                 }
 
                 notificationsContent.innerHTML = '';
+
+                const hasUnread = notifications.some(n => !n.isRead);
+                const toolbar = document.createElement('div');
+                toolbar.className = 'notif-toolbar';
+                toolbar.innerHTML = `<button type="button" class="notif-markall" ${hasUnread ? '' : 'disabled'}>Mark all as read</button>`;
+                toolbar.querySelector('.notif-markall').addEventListener('click', () => {
+                    markNotificationsRead(notifications.filter(n => !n.isRead).map(n => n.id));
+                    renderNotificationsList();
+                });
+                notificationsContent.appendChild(toolbar);
+
+                let lastGroup = null;
                 notifications.forEach(n => {
+                    const group = notifGroupLabel(n.createdAt);
+                    if (group !== lastGroup) {
+                        const h = document.createElement('div');
+                        h.className = 'notif-group-label';
+                        h.textContent = group;
+                        notificationsContent.appendChild(h);
+                        lastGroup = group;
+                    }
+
+                    const video = notifVideoFor(n);
+                    const actorChannel = channels.find(c => c.owner === n.actorId);
+                    const actorName = actorChannel ? actorChannel.name : (n.message || '?');
+                    const initial = notifEscape((actorName || '?').charAt(0).toUpperCase());
+                    const avatar = n.actorId
+                        ? avatarHtml(n.actorId, initial, 'notif-avatar')
+                        : `<div class="notif-avatar">${initial}</div>`;
+                    const thumb = (video && (n.type === 'upload' || n.type === 'comment' || n.type === 'reply' || n.type === 'like'))
+                        ? (video.thumbnailUrl
+                            ? `<img class="notif-thumb" src="${notifEscape(video.thumbnailUrl)}" alt="">`
+                            : `<video class="notif-thumb" src="${notifEscape(video.url)}" preload="metadata" muted playsinline></video>`)
+                        : '';
+
                     const item = document.createElement('div');
                     item.className = 'notification-item' + (n.isRead ? '' : ' unread');
                     item.innerHTML = `
-                        <div class="notification-icon"><i class="material-icons">${notificationIcon(n.type)}</i></div>
-                        <div class="notification-body">
-                            <div class="notification-message">${n.message}</div>
-                            <div class="notification-time">${formatDate(n.createdAt)}</div>
+                        <div class="notif-avatar-wrap">
+                            ${avatar}
+                            <span class="notif-type-icon"><i class="material-icons">${notificationIcon(n.type)}</i></span>
                         </div>
+                        <div class="notification-body">
+                            <div class="notification-message">${notifEscape(n.message)}</div>
+                            <div class="notification-time">${notifTimeAgo(n.createdAt)}</div>
+                        </div>
+                        ${thumb}
+                        <button type="button" class="notif-remove" aria-label="Remove notification" title="Remove"><i class="material-icons">close</i></button>
                     `;
+                    item.addEventListener('click', () => openNotification(n));
+                    item.querySelector('.notif-remove').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        removeNotification(n.id);
+                    });
                     notificationsContent.appendChild(item);
                 });
             }
@@ -4335,24 +4555,39 @@
                 notificationsPage.classList.add('open');
                 await fetchNotifications();
                 renderNotificationsList();
-
-                // Mark everything as read now that the person has seen them
-                const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
-                if (unreadIds.length && currentUser) {
-                    notifications.forEach(n => n.isRead = true);
-                    updateNotifBadge();
-                    try {
-                        await supabase.from('notifications').update({ is_read: true })
-                            .eq('user_id', currentUser.id).in('id', unreadIds);
-                    } catch (err) {
-                        console.warn('Could not mark notifications read:', err);
-                    }
-                }
+                // Like YouTube: the badge clears once you've opened the list,
+                // but items stay highlighted until you tap them or "Mark all as read".
+                // (Items are marked read individually as you open them.)
             }
 
             function closeNotificationsPage() {
                 notificationsPage.classList.remove('open');
             }
+
+            // Live updates: new notifications show up instantly, with a 60s refresh as a fallback
+            let notifRealtimeChannel = null;
+            function startNotificationLive() {
+                if (!currentUser || !supabase) return;
+                try {
+                    if (notifRealtimeChannel) { supabase.removeChannel(notifRealtimeChannel); notifRealtimeChannel = null; }
+                    notifRealtimeChannel = supabase
+                        .channel('notifs-' + currentUser.id)
+                        .on('postgres_changes',
+                            { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + currentUser.id },
+                            async () => {
+                                await fetchNotifications();
+                                if (notificationsPage.classList.contains('open')) renderNotificationsList();
+                            })
+                        .subscribe();
+                } catch (err) {
+                    console.warn('Realtime notifications unavailable:', err.message || err);
+                }
+            }
+            setInterval(async () => {
+                if (!currentUser || document.hidden) return;
+                await fetchNotifications();
+                if (notificationsPage.classList.contains('open')) renderNotificationsList();
+            }, 60000);
 
             headerNotifBtn.addEventListener('click', openNotificationsPage);
             notifBackBtn.addEventListener('click', closeNotificationsPage);
@@ -6071,6 +6306,7 @@
                 dislikedVideos = [];
                 likedComments = [];
                 notifications = [];
+                try { if (notifRealtimeChannel) { supabase.removeChannel(notifRealtimeChannel); notifRealtimeChannel = null; } } catch (e) {}
                 updateNotifBadge();
                 updateUserUI();
                 showHomePage();
@@ -6281,6 +6517,11 @@
 
             function handleFiles(files) {
                 const file = files[0];
+                if (file && file.size > B2_MAX_VIDEO_MB * 1024 * 1024) {
+                    alert('That video is ' + Math.round(file.size / 1024 / 1024) + ' MB. The maximum upload size is ' + B2_MAX_VIDEO_MB + ' MB.');
+                    videoInput.value = '';
+                    return;
+                }
                 if (file && file.type.startsWith('video/')) {
                     const videoURL = URL.createObjectURL(file);
                     videoPreview.src = videoURL;
@@ -6478,6 +6719,51 @@
                     xhr.onerror = function() { reject(new Error('Network error during upload')); };
                     xhr.send(file);
                 });
+            }
+
+            // Uploads a video to Backblaze B2 (extra free storage) via a signed link
+            // from the b2-upload Edge Function. Returns the stable playback URL.
+            const B2_MAX_VIDEO_MB = 700;
+            async function uploadVideoToB2(file, onProgress) {
+                if (file.size > B2_MAX_VIDEO_MB * 1024 * 1024) {
+                    throw new Error('Video is too large (max ' + B2_MAX_VIDEO_MB + ' MB).');
+                }
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) throw new Error('Please sign in again before uploading.');
+
+                const signRes = await fetch(`${SUPABASE_URL}/functions/v1/b2-upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'apikey': SUPABASE_PUBLIC_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        contentType: file.type || 'video/mp4',
+                        size: file.size
+                    })
+                });
+                const signData = await signRes.json().catch(() => ({}));
+                if (!signRes.ok || !signData.uploadUrl) {
+                    throw new Error(signData.error || ('Could not start upload (' + signRes.status + ')'));
+                }
+
+                await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', signData.uploadUrl);
+                    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+                    xhr.upload.onprogress = function(e) {
+                        if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+                    };
+                    xhr.onload = function() {
+                        if (xhr.status >= 200 && xhr.status < 300) resolve();
+                        else reject(new Error('Upload failed (' + xhr.status + ')'));
+                    };
+                    xhr.onerror = function() { reject(new Error('Network error during upload (check B2 CORS settings)')); };
+                    xhr.send(file);
+                });
+                return signData.playUrl;
             }
 
             function waitForVideoEvent(videoEl, eventName, timeoutMs) {
@@ -6775,11 +7061,8 @@
                 setUploadProgress(0);
 
                 try {
-                    // 1. Upload the actual video file to Supabase Storage, tracking progress
-                    const filePath = `${currentUser.id}/${Date.now()}-${file.name}`;
-                    await uploadFileWithProgress('videos', filePath, file, (pct) => setUploadProgress(pct));
-
-                    const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(filePath);
+                    // 1. Upload the actual video file to Backblaze B2, tracking progress
+                    const publicUrl = await uploadVideoToB2(file, (pct) => setUploadProgress(pct));
 
                     // 2. Thumbnail: uploaded image, chosen random frame, or auto frame
                     let thumbnailUrl = null;
@@ -6841,6 +7124,9 @@
                     }
 
                     if (insertError) throw insertError;
+
+                    // Notify everyone subscribed to this channel (like YouTube's "new video" bell)
+                    notifySubscribersOfUpload(currentChannel, videoRow);
 
                     // Add to beginning of videos array (most recent first)
                     const mappedUpload = mapVideoRow(videoRow);
